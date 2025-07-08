@@ -1,0 +1,66 @@
+{
+    "elements": [
+        {
+            "type": "Label",
+            "bold": "true",
+            "label": "UniFi Device"
+        },
+        {
+            "type": "ValidationTextBox",
+            "name": "ServerAddress",
+            "caption": "Server Address",
+            "validate": "^(([a-zA-Z0-9\\.\\-\\_]+(\\.[a-zA-Z]{2,3})+)|(\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b))$"
+        },
+        {
+            "type": "ValidationTextBox",
+            "name": "APIKey",
+            "caption": "API Key"
+        },                
+        {
+            "type": "Select",
+            "name": "Site",
+            "caption": "Site",
+            "options": [
+                {"caption":"test","value":"test"}
+            ]
+        },
+        {
+            "type": "NumberSpinner",
+            "name": "Timer",
+            "caption": "Update Frequency",
+            "suffix": "sec - 0 is off",
+            "digits": 0,
+            "minimum": 0
+        },
+        {
+            "type": "Select",
+            "name": "DeivceID",
+            "caption": "Device ID",
+            "options": [
+                {"caption":"Test","value":"4fd8f92d-600f-35d4-b25e-cd28dccda315"}
+            ]
+        }
+    ],
+    "actions": [{
+                    "type": "Button",
+                    "label": "Daten Holen",
+                    "onClick": "UNIFINT_getData($id);"
+                },
+                {
+                    "type": "Button",
+                    "label": "Devices Holen",
+                    "onClick": "UNIFINT_getDevices($id);"
+                },
+                {
+                    "type": "Button",
+                    "label": "Sites Holen",
+                    "onClick": "UNIFINT_getSites($id);"
+                },
+                {
+                    "type": "Button",
+                    "label": "Stats Holen",
+                    "onClick": "UNIFINT_getStats($id);"
+                }
+                ],
+    "status": []
+}

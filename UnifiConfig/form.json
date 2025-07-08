@@ -1,0 +1,38 @@
+{
+    "elements": [],
+    "actions": [{
+            "type": "Configurator",
+            "name": "Configurator",
+            "caption": "",
+            "add": false,
+            "delete": false,
+            "sort": {
+                "column": "name",
+                "direction": "ascending"
+            },
+            "columns": [
+                {
+                    "caption": "Device Name",
+                    "name": "name",
+                    "width": "80px"
+                },
+                {
+                    "caption": "Type",
+                    "name": "type",
+                    "width": "300px"
+                },
+                {
+                    "caption": "ID",
+                    "name": "id",
+                    "width": "300px"
+                },
+                {
+                    "caption": "IP",
+                    "name": "ip",
+                    "width": "auto"
+                }
+            ],
+            "values": [{"name":"Test","type":"testtype","id":"Testid","ip":"192.168.178.55"}]
+        }],
+    "status": []
+}

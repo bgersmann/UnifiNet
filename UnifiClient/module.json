@@ -1,0 +1,12 @@
+{
+    "id": "{E74A3667-F11A-55BF-FDAD-749027B9047F}",
+    "name": "UnifiClient",
+    "type": 3,
+    "vendor": "Unifi",
+    "aliases": [],
+    "parentRequirements": [],
+    "childRequirements": [],
+    "implemented": [],
+    "prefix": "UNIFICL",
+    "url": "https://github.com/bgersmann/UnifiNet"
+}

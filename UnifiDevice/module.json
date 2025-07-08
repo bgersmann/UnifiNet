@@ -1,0 +1,12 @@
+{
+    "id": "{0895574E-CB42-0139-1538-C1E38BABC42B}",
+    "name": "UnifiDevice",
+    "type": 3,
+    "vendor": "Unifi",
+    "aliases": [],
+    "parentRequirements": [],
+    "childRequirements": [],
+    "implemented": [],
+    "prefix": "UNIFINT",
+    "url": "https://github.com/bgersmann/UnifiNet"
+}
