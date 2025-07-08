@@ -7,3 +7,6 @@ Folgende Module beinhaltet das UnifiNet Repository:
 
 - __UnifiClient__ ([Dokumentation](UnifiClient))  
 	Kurze Beschreibung des Moduls.
+
+- __UnifiConfig__ ([Dokumentation](UnifiConfig))  
+	Kurze Beschreibung des Moduls.
