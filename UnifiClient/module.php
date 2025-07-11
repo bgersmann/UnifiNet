@@ -36,8 +36,8 @@ class UnifiClient extends IPSModule
         $this->MaintainVariable( 'ID', $this->Translate( 'Client ID' ), 3, '', $vpos++, 1 );
         $this->MaintainVariable( 'ClientType', $this->Translate( 'Client Type' ), 3, '', $vpos++, 1 );
         $this->MaintainVariable( 'ClientIP', $this->Translate( 'Client IP' ), 3, '', $vpos++, 1 );
-        $this->MaintainVariable( 'ConnectedAt', $this->Translate( 'Verbunden Seit' ), 3, '', $vpos++, 1 );
-        $this->MaintainVariable( 'Online', $this->Translate( 'Online' ), 0, '', $vpos++, 1 );
+        $this->MaintainVariable( 'ConnectedAt', $this->Translate( 'Verbunden Seit' ), 1, [ 'PRESENTATION' => VARIABLE_PRESENTATION_DATE_TIME ], $vpos++, 1 );
+        $this->MaintainVariable( 'Online', $this->Translate( 'Online' ), 0, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON'=> 'network-wired','OPTIONS'=>'[{"ColorDisplay":16077123,"Value":false,"Caption":"Offline","IconValue":"","IconActive":false,"ColorActive":true,"ColorValue":16077123,"Color":-1},{"ColorDisplay":1692672,"Value":true,"Caption":"Online","IconValue":"","IconActive":false,"ColorActive":true,"ColorValue":1692672,"Color":-1}]'], $vpos++, 1 );
 
         $TimerMS = $this->ReadPropertyInteger( 'Timer' ) * 1000;
         $this->SetTimerInterval( 'Collect Data', $TimerMS );

@@ -43,7 +43,7 @@ class UnifiDevice extends IPSModule
         $this->MaintainVariable( 'UptimeSec', $this->Translate( 'UptimeSec' ), 1, [ 'PRESENTATION' => VARIABLE_PRESENTATION_DURATION, 'FORMAT'=> 2 ], $vpos++, 1 );
         $this->MaintainVariable( 'UplinkTX', $this->Translate( 'UplinkTX' ), 2, '', $vpos++, 1 );
         $this->MaintainVariable( 'UplinkRX', $this->Translate( 'UplinkRX' ), 2, '', $vpos++, 1 );
-        $this->MaintainVariable( 'Online', $this->Translate( 'Online' ), 0, '', $vpos++, 1 );
+        $this->MaintainVariable( 'Online', $this->Translate( 'Online' ), 0, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON'=> 'network-wired','OPTIONS'=>'[{"ColorDisplay":16077123,"Value":false,"Caption":"Offline","IconValue":"","IconActive":false,"ColorActive":true,"ColorValue":16077123,"Color":-1},{"ColorDisplay":1692672,"Value":true,"Caption":"Online","IconValue":"","IconActive":false,"ColorActive":true,"ColorValue":1692672,"Color":-1}]'], $vpos++, 1 );
 
         $TimerMS = $this->ReadPropertyInteger( 'Timer' ) * 1000;
         $this->SetTimerInterval( 'Collect Data', $TimerMS );

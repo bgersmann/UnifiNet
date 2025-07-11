@@ -29,14 +29,12 @@ trait myFunctions
 
     public function getSiteID( $site = 'default' ) {
         $JSONData = $this->getApiData();
-        if ( is_array( $JSONData ) && isset( $JSONData ) )
-        {
+        if ( is_array( $JSONData ) && isset( $JSONData ) ) {
             foreach ( $JSONData[ 'data' ] as $item ) {
                 if ( $item[ 'internalReference' ] == $site ) {
                     return $item[ 'id' ];
                 }
             }
-
         }
         return '';
     }
@@ -46,13 +44,13 @@ trait myFunctions
         $siteID = $this->getSiteID( $site );
         $JSONData = $this->getApiData( '/'.$siteID.'/devices?limit=200' );
 
-        if ( is_array( $JSONData ) && isset( $JSONData ) )
-        {
+        if ( is_array( $JSONData ) && isset( $JSONData ) ) {
             $devices = $JSONData[ 'data' ];
+            usort( $devices, function ( $a, $b ) {
+        return $a[ 'name' ]>$b[ 'name' ];
+        });
 
-            foreach ( $devices as $device )
-            {
-
+            foreach ( $devices as $device ) {
                 $value[] = [
                     'caption'=>$device[ 'name' ],
                     'value'=> $device[ 'id' ]
@@ -67,31 +65,27 @@ trait myFunctions
         $site = $this->ReadPropertyString( 'Site' );
         $siteID = $this->getSiteID( $site );
         $JSONData = $this->getApiData( '/'.$siteID.'/clients?limit=200' );
-        if ( is_array( $JSONData ) && isset( $JSONData ) )
-        {
-            $devices = $JSONData[ 'data' ];
+        if ( is_array( $JSONData ) && isset( $JSONData ) ) {
+            $clients = $JSONData[ 'data' ];
+            usort( $clients, function ( $a, $b ) {
+            return $a[ 'name' ]>$b[ 'name' ];});
 
-            foreach ( $devices as $device )
-            {
-
+            foreach ( $clients as $client ) {
                 $value[] = [
-                    'caption'=>$device[ 'name' ],
-                    'value'=> $device[ 'id' ]
+                    'caption'=>$client[ 'name' ],
+                    'value'=> $client[ 'id' ]
                 ];
             }
-
             return $value;
         }
     }
 
-    public function getDataDevice()
-    {
+    public function getDataDevice() {
         $deviceID = $this->ReadPropertyString( 'ID' );
         $site = $this->ReadPropertyString( 'Site' );
         $siteID = $this->getSiteID( $site );
         $JSONData = $this->getApiData( '/'.$siteID.'/devices/'.$deviceID );
-        if ( is_array( $JSONData ) && isset( $JSONData ) )
-        {
+        if ( is_array( $JSONData ) && isset( $JSONData ) ) {
             if ( isset( $JSONData[ 'statusCode' ] ) ) {
                 $this->SetValue( 'Online', false );
             } else {
@@ -102,21 +96,54 @@ trait myFunctions
                 $this->SetValue( 'DeviceIP', $JSONData[ 'ipAddress' ] );
                 $this->SetValue( 'Firmware', $JSONData[ 'firmwareVersion' ] );
                 $this->SetValue( 'FirmwareUpdate', $JSONData[ 'firmwareUpdatable' ] );
-                $this->SetValue( 'Online', true );
+                $this->SetValue( 'Online', ( $JSONData[ 'state' ] == 'ONLINE' ) ? true : false );
+                if ( isset( $JSONData[ 'interfaces' ] ) ) {
+                    if ( isset( $JSONData[ 'interfaces' ][ 'ports' ] ) ) {
+                        $ports = $JSONData[ 'interfaces' ][ 'ports' ];
+                        usort( $ports, function ( $a, $b ) {
+                                        return intval($a[ 'idx' ])>intval($b[ 'idx' ]);
+                                        });
+                        $vpos = 1000;
+                        foreach ( $ports as $port ) {
+                            $this->MaintainVariable( 'Port_'.$port[ 'idx' ], $this->Translate( 'Port '.$port[ 'idx' ] ), 3, '', $vpos++, 1 );
+                            $PortText='';
+                            if ( isset( $port[ 'poe' ] ) ) {
+                                $POE=' POE-'.$port[ 'poe' ]['state'].' - '.$port[ 'poe' ]['enabled'].' - '.$port[ 'poe' ]['standard'];
+                            } else 
+                            {
+                                $POE='';
+                            }
+                            if ($port[ 'state' ]== 'UP') {
+                                $PortText=$port[ 'connector' ].'-'.$port[ 'idx' ].' - '.$port[ 'state' ].' - '.(( isset($port[ 'speedMbps' ])==true) ? $port[ 'speedMbps' ] : '0') .'Mbps'.$POE ;
+                            } else {
+                                $PortText=$port[ 'connector' ]. '-'.$port[ 'idx' ].' - '.$port[ 'state' ];
+                            }
+                            
+                            $this->SetValue( 'Port_'.$port[ 'idx' ], $PortText);
+                        }
+                    }
+                    if ( isset( $JSONData[ 'interfaces' ][ 'radios' ] ) ) {
+                        $radios = $JSONData[ 'interfaces' ][ 'radios' ];
+                        $vpos = 2000;
+                        foreach ( $radios as $radio ) {
+                            $vpos++;
+                            $this->MaintainVariable( 'Port_'.$vpos, $this->Translate( 'WLAN '.$radio[ 'frequencyGHz' ] ), 3, '', $vpos, 1 );
+                            $this->SetValue( 'Port_'.$vpos, $radio[ 'frequencyGHz' ].'GHz - CH'.$radio[ 'channel'].' - '.$radio[ 'wlanStandard'].' - '.$radio[ 'channelWidthMHz' ].'MHz' );
+                        }
+                    }
+                }
             }
+            $this->getStatsDevice();
         }
-        $this->getStatsDevice();
     }
 
-    public function getDataClient()
-    {
+    public function getDataClient() {
         $clientID = $this->ReadPropertyString( 'ID' );
 
         $site = $this->ReadPropertyString( 'Site' );
         $siteID = $this->getSiteID( $site );
         $JSONData = $this->getApiData( '/'.$siteID.'/clients/'.$clientID );
-        if ( is_array( $JSONData ) && isset( $JSONData ) )
-        {
+        if ( is_array( $JSONData ) && isset( $JSONData ) ) {
             if ( isset( $JSONData[ 'statusCode' ] ) ) {
                 $this->SetValue( 'Online', false );
             } else {
@@ -126,20 +153,18 @@ trait myFunctions
                 if ( isset( $JSONData[ 'ipAddress' ] ) ) {
                     $this->SetValue( 'ClientIP', $JSONData[ 'ipAddress' ] );
                 }
-                $this->SetValue( 'ConnectedAt', $JSONData[ 'connectedAt' ] );
+                $this->SetValue( 'ConnectedAt', strtotime( $JSONData[ 'connectedAt' ] ) );
                 $this->SetValue( 'Online', true );
             }
         }
     }
 
-    public function getStatsDevice()
-    {
+    public function getStatsDevice() {
         $deviceID = $this->ReadPropertyString( 'ID' );
         $site = $this->ReadPropertyString( 'Site' );
         $siteID = $this->getSiteID( $site );
         $JSONData = $this->getApiData( '/'.$siteID.'/devices/'.$deviceID.'/statistics/latest' );
-        if ( is_array( $JSONData ) && isset( $JSONData ) )
-        {
+        if ( is_array( $JSONData ) && isset( $JSONData ) ) {
             #var_dump( $JSONData );
             $this->SetValue( 'UptimeSec', $JSONData[ 'uptimeSec' ] );
             $this->SetValue( 'UplinkTX', round( $JSONData[ 'uplink' ][ 'txRateBps' ]/1000/1000, 4 ) );
@@ -149,19 +174,14 @@ trait myFunctions
 
     public function getSites() {
         $JSONData = $this->getApiData();
-        if ( is_array( $JSONData ) && isset( $JSONData ) )
-        {
+        if ( is_array( $JSONData ) && isset( $JSONData ) ) {
             $sites = $JSONData[ 'data' ];
-
-            foreach ( $sites as $site )
-            {
-
+            foreach ( $sites as $site ) {
                 $value[] = [
                     'caption'=>$site[ 'internalReference' ],
                     'value'=> $site[ 'internalReference' ]
                 ];
             }
-
             return $value;
         }
     }
