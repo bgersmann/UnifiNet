@@ -97,6 +97,9 @@ class UnifiConfigurator extends IPSModule
         if ( is_array( $JSONData ) && isset( $JSONData ) )
         {
             $devices = $JSONData[ 'data' ];
+            usort( $devices, function ( $a, $b ) {
+                return $a[ 'name' ]>$b[ 'name' ];
+                });
             foreach ( $devices as $device ) {
                 $value[] = array(
                     'Name'	=>$device[ 'name' ],
@@ -120,6 +123,9 @@ class UnifiConfigurator extends IPSModule
             $JSONData = $this->getApiData( '/'.$siteID.'/clients?limit=200' );
             if ( is_array( $JSONData ) && isset( $JSONData ) ) {
                 $clients = $JSONData[ 'data' ];
+                usort( $clients, function ( $a, $b ) {
+                return $a[ 'name' ]>$b[ 'name' ];
+                });
                 foreach ( $clients as $client )
                 {
                     $value[] = array(
