@@ -47,8 +47,8 @@ trait myFunctions
         if ( is_array( $JSONData ) && isset( $JSONData ) ) {
             $devices = $JSONData[ 'data' ];
             usort( $devices, function ( $a, $b ) {
-        return $a[ 'name' ]>$b[ 'name' ];
-        });
+                return $a[ 'name' ]>$b[ 'name' ];
+                });
 
             foreach ( $devices as $device ) {
                 $value[] = [
@@ -105,30 +105,59 @@ trait myFunctions
                                         });
                         $vpos = 1000;
                         foreach ( $ports as $port ) {
-                            $this->MaintainVariable( 'Port_'.$port[ 'idx' ], $this->Translate( 'Port '.$port[ 'idx' ] ), 3, '', $vpos++, 1 );
-                            $PortText='';
-                            if ( isset( $port[ 'poe' ] ) ) {
-                                $POE=' POE-'.$port[ 'poe' ]['state'].' - '.$port[ 'poe' ]['enabled'].' - '.$port[ 'poe' ]['standard'];
-                            } else 
-                            {
-                                $POE='';
-                            }
-                            if ($port[ 'state' ]== 'UP') {
-                                $PortText=$port[ 'connector' ].'-'.$port[ 'idx' ].' - '.$port[ 'state' ].' - '.(( isset($port[ 'speedMbps' ])==true) ? $port[ 'speedMbps' ] : '0') .'Mbps'.$POE ;
+                            if ($port[ 'state' ]== 'UP') {                                
+                                if ($port[ 'speedMbps' ]<=100) {                                   
+                                   $colSymbol=16776960; //gelb
+                                } else {
+                                    $colSymbol=1692672; //gruen
+                                }                                
                             } else {
-                                $PortText=$port[ 'connector' ]. '-'.$port[ 'idx' ].' - '.$port[ 'state' ];
+                                $colSymbol=16077123; //rot
                             }
-                            
-                            $this->SetValue( 'Port_'.$port[ 'idx' ], $PortText);
+
+                            $this->MaintainVariable( 'Port_'.$port[ 'idx' ], $this->Translate( 'Port '.$port[ 'idx' ] ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'COLOR'=>$colSymbol,'ICON'=>'ethernet'], $vpos++, 1 );
+                            $PortText='';
+                            if (isset($port[ 'speedMbps' ])) {
+                                if ($port[ 'speedMbps' ]>=1000) {
+                                    $speed=($port[ 'speedMbps' ]/1000).'Gbit/s';                                
+                                } else {
+                                    $speed=$port[ 'speedMbps' ].'Mbit/s';
+                                }
+                            } else {
+                                $speed=$port[ 'state' ];
+                            }
+
+                            if ( isset( $port[ 'poe' ] ) ) {
+                                if ($port[ 'poe' ]['state']=='UP') {
+                                    $colSymbol=1692672;
+                                    $poe=$port[ 'poe' ]['standard'];
+                                }else {
+                                    $colSymbol=16077123;
+                                    $poe=$port[ 'poe' ]['state'];
+                                }
+                                $this->MaintainVariable( 'Port_'.$port[ 'idx' ].'POE', $this->Translate( 'Port '.$port[ 'idx' ].'-POE' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'COLOR'=>$colSymbol,'ICON'=>'ethernet'], $vpos++, 1 );
+                                $this->SetValue( 'Port_'.$port[ 'idx' ].'POE', $poe);
+                            } else {
+                                $vpos++;
+                            }                           
+                            $this->SetValue( 'Port_'.$port[ 'idx' ], $speed);
                         }
                     }
                     if ( isset( $JSONData[ 'interfaces' ][ 'radios' ] ) ) {
                         $radios = $JSONData[ 'interfaces' ][ 'radios' ];
                         $vpos = 2000;
                         foreach ( $radios as $radio ) {
+                            //$radio[ 'channel'] prüfen ob vorhanden
                             $vpos++;
-                            $this->MaintainVariable( 'Port_'.$vpos, $this->Translate( 'WLAN '.$radio[ 'frequencyGHz' ] ), 3, '', $vpos, 1 );
-                            $this->SetValue( 'Port_'.$vpos, $radio[ 'frequencyGHz' ].'GHz - CH'.$radio[ 'channel'].' - '.$radio[ 'wlanStandard'].' - '.$radio[ 'channelWidthMHz' ].'MHz' );
+                            if (isset($radio[ 'channel'])) {
+                                $colSymbol=1692672; //gruen
+                                $radioTxt=$radio[ 'wlanStandard'].' - '.$radio[ 'channelWidthMHz' ].'MHz';
+                            } else {
+                                $colSymbol=16077123; //rot
+                                $radioTxt=$radio[ 'wlanStandard'];
+                            }
+                            $this->MaintainVariable( 'Port_'.$vpos, $this->Translate( 'WLAN '.$radio[ 'frequencyGHz' ].'GHz'), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'COLOR'=>$colSymbol,'ICON'=>'wifi'], $vpos, 1 );
+                            $this->SetValue( 'Port_'.$vpos, $radioTxt );
                         }
                     }
                 }
@@ -166,12 +195,12 @@ trait myFunctions
         $JSONData = $this->getApiData( '/'.$siteID.'/devices/'.$deviceID.'/statistics/latest' );
         if ( is_array( $JSONData ) && isset( $JSONData ) ) {
             #var_dump( $JSONData );
-            $this->SetValue( 'UptimeSec', $JSONData[ 'uptimeSec' ] );
-            $this->SetValue( 'UplinkTX', round( $JSONData[ 'uplink' ][ 'txRateBps' ]/1000/1000, 4 ) );
-            $this->SetValue( 'UplinkRX', round( $JSONData[ 'uplink' ][ 'rxRateBps' ]/1000/1000, 4 ) );
+            $this->SetValue( 'UptimeSec', (( isset($JSONData[ 'uptimeSec' ]) ) ? $JSONData[ 'uptimeSec' ] : 0) );
+            $this->SetValue( 'UplinkTX', round( (( isset($JSONData[ 'uplink' ][ 'txRateBps' ]) ) ? $JSONData[ 'uplink' ][ 'txRateBps' ]/1000/1000 : 0),3 ) );
+            $this->SetValue( 'UplinkRX', round( (( isset($JSONData[ 'uplink' ][ 'rxRateBps' ]) ) ? $JSONData[ 'uplink' ][ 'rxRateBps' ]/1000/1000 : 0),3 ) );
         }
     }
-
+    //$JSONData[ 'uptimeSec' ] prüfen ob vorhanden
     public function getSites() {
         $JSONData = $this->getApiData();
         if ( is_array( $JSONData ) && isset( $JSONData ) ) {
