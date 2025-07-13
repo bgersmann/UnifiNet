@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 		public function Send(string $api)
 		{		
-			if ($this->GetStatus()==102 and $this->HasActiveParent()) {
+			if ($this->HasActiveParent()) {
 				$this->SendDataToParent(json_encode(['DataID' => '{4A5538F1-1C38-198A-3144-D806E0DADF87}',
 					'Api' => $api,
 					'InstanceID' => $this->InstanceID
@@ -49,7 +49,7 @@ declare(strict_types=1);
 
 		 public function GetConfigurationForm()
 		{
-			if ($this->GetStatus()==102 and $this->HasActiveParent()) {
+			if ($this->HasActiveParent()) {
 				$this->Send("getDevicesConfig");
 			}
 			$arrayOptions[] = array( 'caption' => 'default', 'value' => 'default' );

@@ -158,7 +158,7 @@ class UnifiGateway extends IPSModule
         }
         return '';
     }
-    public function getClients() {
+    public function getClients():array {
         $site = $this->ReadPropertyString( 'Site' );
         $siteID = $this->getSiteID( $site );
         $JSONData = $this->getApiData( '/'.$siteID.'/clients?limit=200' );
