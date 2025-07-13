@@ -1,0 +1,288 @@
+<?php
+
+declare( strict_types = 1 );
+
+class UnifiGateway extends IPSModule
+{
+    public function Create()
+    {
+        //Never delete this line!
+        parent::Create();
+        $this->RegisterPropertyString( 'ServerAddress', '192.168.178.1' );
+        $this->RegisterPropertyString( 'APIKey', '' );
+        $this->RegisterPropertyString( 'Site', 'default' );        
+    }
+
+    public function Destroy()
+    {
+        //Never delete this line!
+        parent::Destroy();
+    }
+
+    public function ApplyChanges()
+    {
+        //Never delete this line!
+        parent::ApplyChanges();
+        $APIKey = $this->ReadPropertyString( 'APIKey' );
+        if (empty($APIKey))
+		{
+		    // instance inactive
+			$this->SetStatus( 104 );
+		} else {
+		    // instance active
+			$this->SetStatus( 102 );
+		}
+    }
+
+    public function ForwardData( $JSONString )
+    {
+        $data = json_decode( $JSONString );
+        $APIKey = $this->ReadPropertyString( 'APIKey' );
+        if (empty($APIKey))
+		{
+		    // instance inactive
+			$this->SetStatus( 104 );
+		} else {
+		    // instance active
+			$this->SetStatus( 102 );
+		}
+
+        
+        //IPS_LogMessage( 'UNIFIGW', utf8_decode( strval($data->InstanceID) ) );
+		if (isset($data->Api)) {
+			switch ($data->Api) {
+				case "getClients":
+					$array = $this->getClients();
+					$this->send($data->InstanceID,$data->Api,json_encode($array));
+					break;
+                case "getClientData":
+					$jsonString = $this->getClientData(IPS_GetProperty( $data->InstanceID, 'ID' ));
+					$this->send($data->InstanceID,$data->Api,$jsonString);
+					break;
+                case "getDevices":
+					$array = $this->getDevices();
+					$this->send($data->InstanceID,$data->Api,json_encode($array));
+					break;
+                case "getDeviceData":
+					$jsonString = $this->getDeviceData(IPS_GetProperty( $data->InstanceID, 'ID' ));
+					$this->send($data->InstanceID,$data->Api,$jsonString);
+					break;
+                case "getDevicesConfig":
+                    $jsonString = $this->getDevicesConfig();
+					$this->send($data->InstanceID,$data->Api,$jsonString);
+					break;
+                case "getDeviceStats":                    
+                    $jsonString = $this->getDeviceStats(IPS_GetProperty( $data->InstanceID, 'ID' ));
+					$this->send($data->InstanceID,$data->Api,$jsonString);
+                    break;
+			}
+			
+		}
+    }
+
+    public function Send( int $id,string $Api, string $Text )
+    {
+        $this->SendDataToChildren( json_encode( [ 'DataID' => '{6E3E09BC-4C83-0ABF-4C97-7E7B8C70A64E}', 'id' =>  $id,'Api'=> $Api,'data'=> $Text ] ) );		
+    }
+
+    public function GetConfigurationForm() {
+        $ServerAddress = $this->ReadPropertyString( 'ServerAddress' );
+        $APIKey = $this->ReadPropertyString( 'APIKey' );
+        $site = $this->ReadPropertyString( 'Site' );
+        if ( !empty( $APIKey ) ) {
+            $arrayOptions = $this->getSites();
+        } else {
+            $arrayOptions[] = array( 'caption' => 'default', 'value' => 'default' );
+        }
+        $arrayStatus = array();
+
+        $arrayStatus[] = array( 'code' => 102, 'icon' => 'active', 'caption' => 'Instanz ist aktiv' );
+
+        $arraySort = array();
+        #$arraySort = array( 'column' => 'DeviceName', 'direction' => 'ascending' );
+
+        $arrayElements = array();
+        $arrayElements[] = array( 'type' => 'Label', 'label' => 'UniFi Device Configurator' );
+        $arrayElements[] = array( 'type' => 'ValidationTextBox', 'name' => 'ServerAddress', 'caption' => 'Unifi Device IP', 'validate' => "^(([a-zA-Z0-9\\.\\-\\_]+(\\.[a-zA-Z]{2,3})+)|(\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b))$" );
+        $arrayElements[] = array( 'type' => 'ValidationTextBox', 'name' => 'APIKey', 'caption' => 'APIKey' );
+        $arrayElements[] = array( 'type' => 'Select', 'name' => 'Site', 'caption' => 'Site', 'options' => $arrayOptions );
+
+        $arrayActions = array();
+
+        return JSON_encode( array( 'status' => $arrayStatus, 'elements' => $arrayElements, 'actions' => $arrayActions ) );
+
+    }
+
+    public function getApiData( string $endpoint = '' ):array {
+        $ServerAddress = $this->ReadPropertyString( 'ServerAddress' );
+        $APIKey = $this->ReadPropertyString( 'APIKey' );
+        $ServerAddress = $this->ReadPropertyString( 'ServerAddress' );
+        $APIKey = $this->ReadPropertyString( 'APIKey' );
+
+        $ch = curl_init();
+        curl_setopt( $ch, CURLOPT_URL, 'https://'.$ServerAddress.'/proxy/network/integrations/v1/sites'.$endpoint );
+        curl_setopt( $ch, CURLOPT_HTTPGET, true );
+        curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+        curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, false );
+        curl_setopt( $ch, CURLOPT_SSL_VERIFYHOST, false );
+        curl_setopt( $ch, CURLOPT_HTTPHEADER, array( 'X-API-KEY:'.$APIKey ) );
+        curl_setopt( $ch, CURLOPT_SSLVERSION, 'CURL_SSLVERSION_TLSv1' );
+        $RawData = curl_exec( $ch );
+        curl_close( $ch );
+        $JSONData = json_decode( $RawData, true );
+        return $JSONData;
+    }
+
+    public function getSites():array {
+        $JSONData = $this->getApiData();
+        if ( is_array( $JSONData ) && isset( $JSONData ) ) {
+            $sites = $JSONData[ 'data' ];
+            foreach ( $sites as $site ) {
+                $value[] = [
+                    'caption'=>$site[ 'internalReference' ],
+                    'value'=> $site[ 'internalReference' ]
+                ];
+            }
+            return $value;
+        }
+    }
+
+    public function getSiteID( string $site = 'default' ):string {
+        $JSONData = $this->getApiData();
+        if ( is_array( $JSONData ) && isset( $JSONData ) ) {
+            foreach ( $JSONData[ 'data' ] as $item ) {
+                if ( $item[ 'internalReference' ] == $site ) {
+                    return $item[ 'id' ];
+                }
+            }
+        }
+        return '';
+    }
+    public function getClients() {
+        $site = $this->ReadPropertyString( 'Site' );
+        $siteID = $this->getSiteID( $site );
+        $JSONData = $this->getApiData( '/'.$siteID.'/clients?limit=200' );
+        if ( is_array( $JSONData ) && isset( $JSONData ) ) {
+            $clients = $JSONData[ 'data' ];
+            usort( $clients, function ( $a, $b ) {
+            return $a[ 'name' ]>$b[ 'name' ];});
+
+            foreach ( $clients as $client ) {
+                $value[] = [
+                    'caption'=>$client[ 'name' ],
+                    'value'=> $client[ 'id' ]
+                ];
+            }
+            return $value;
+        }
+    }
+
+     public function getClientData(string $clientID) {
+        $site = $this->ReadPropertyString( 'Site' );
+        $siteID = $this->getSiteID( $site );
+        $JSONData = $this->getApiData( '/'.$siteID.'/clients/'.$clientID );
+        return json_encode($JSONData);
+    }
+
+	public function getDevices() {
+        $site = $this->ReadPropertyString( 'Site' );
+        $siteID = $this->getSiteID( $site );
+        $JSONData = $this->getApiData( '/'.$siteID.'/devices?limit=200' );
+
+        if ( is_array( $JSONData ) && isset( $JSONData ) ) {
+            $devices = $JSONData[ 'data' ];
+            usort( $devices, function ( $a, $b ) {
+                return $a[ 'name' ]>$b[ 'name' ];
+                });
+
+            foreach ( $devices as $device ) {
+                $value[] = [
+                    'caption'=>$device[ 'name' ],
+                    'value'=> $device[ 'id' ]
+                ];
+            }
+
+            return $value;
+        }
+    }
+
+    public function getDeviceStats(string $deviceID) {
+        $site = $this->ReadPropertyString( 'Site' );
+        $siteID = $this->getSiteID( $site );
+        $JSONData = $this->getApiData( '/'.$siteID.'/devices/'.$deviceID.'/statistics/latest' );
+        return json_encode($JSONData);        
+    }
+
+    public function getDeviceData(string $deviceID):string {
+            $site = $this->ReadPropertyString( 'Site' );
+            $siteID = $this->getSiteID( $site );        
+            $JSONData = $this->getApiData( '/'.$siteID.'/devices/'.$deviceID );
+            return json_encode($JSONData);
+        }
+
+    private function getInstanceIDForGuid( $id, $guid )
+    {
+        $instanceIDs = IPS_GetInstanceListByModuleID( $guid );
+        foreach ( $instanceIDs as $instanceID ) {
+            if ( IPS_GetProperty( $instanceID, 'ID' ) == $id ) {
+                return $instanceID;
+            }
+        }
+        return 0;
+    }
+
+    public function getDevicesConfig():string {
+        $ServerAddress = $this->ReadPropertyString( 'ServerAddress' );
+        $APIKey = $this->ReadPropertyString( 'APIKey' );
+        $site = $this->ReadPropertyString( 'Site' );
+        $siteID = $this->getSiteID( $site );
+        $JSONData = $this->getApiData( '/'.$siteID.'/devices?limit=200' );
+        if ( is_array( $JSONData ) && isset( $JSONData ) )
+        {
+            $devices = $JSONData[ 'data' ];
+            usort( $devices, function ( $a, $b ) {
+                return $a[ 'name' ]>$b[ 'name' ];
+                });
+            foreach ( $devices as $device ) {
+                $value[] = array(
+                    'Name'	=>$device[ 'name' ],
+                    'Type'	=>$device[ 'model' ],
+                    'ID'		=>$device[ 'id' ],
+                    'IP'		=>$device[ 'ipAddress' ],
+                    'instanceID'	=>$this->getInstanceIDForGuid( $device['id'], '{19A9D2AF-BD00-461A-58E1-7BF7A0CA19A6}' ),
+                    'create' 		=>[
+                        'moduleID'      => '{19A9D2AF-BD00-461A-58E1-7BF7A0CA19A6}',
+                        'configuration' => [
+                            'ID'	=> $device['id']
+                        ],
+                        'name' => $device[ 'name' ]
+                    ] );
+
+                }
+            }
+            $JSONData = $this->getApiData( '/'.$siteID.'/clients?limit=200' );
+            if ( is_array( $JSONData ) && isset( $JSONData ) ) {
+                $clients = $JSONData[ 'data' ];
+                usort( $clients, function ( $a, $b ) {
+                return $a[ 'name' ]>$b[ 'name' ];
+                });
+                foreach ( $clients as $client )
+                {
+                    $value[] = array(
+                        'Name'	=>$client[ 'name' ],
+                        'Type'	=>'Client',
+                        'ID'		=>$client[ 'id' ],
+                        'IP'		=>isset( $client[ 'ipAddress' ] ) ? $client[ 'ipAddress' ] : '',
+                        'instanceID'	=>$this->getInstanceIDForGuid( $client[ 'id' ], '{75E5E0AD-02F4-61E0-E1AF-57F66DAF7381}' ),
+                        'create' 		=>[
+                            'moduleID'      => '{75E5E0AD-02F4-61E0-E1AF-57F66DAF7381}',
+                            'configuration' => [
+                                'ID'	=> $client[ 'id' ]
+                            ],
+                            'name' => $client[ 'name' ]
+                        ] );
+                    }
+                }
+                return json_encode($value);
+    }
+}

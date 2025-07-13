@@ -1,4 +1,4 @@
-# Test
+# UnifiConfigurator
 Beschreibung des Moduls.
 
 ### Inhaltsverzeichnis
@@ -21,12 +21,12 @@ Beschreibung des Moduls.
 
 ### 3. Software-Installation
 
-* Über den Module Store das 'Test'-Modul installieren.
+* Über den Module Store das 'UnifiConfigurator'-Modul installieren.
 * Alternativ über das Module Control folgende URL hinzufügen
 
 ### 4. Einrichten der Instanzen in IP-Symcon
 
- Unter 'Instanz hinzufügen' kann das 'Test'-Modul mithilfe des Schnellfilters gefunden werden.  
+ Unter 'Instanz hinzufügen' kann das 'UnifiConfigurator'-Modul mithilfe des Schnellfilters gefunden werden.  
 	- Weitere Informationen zum Hinzufügen von Instanzen in der [Dokumentation der Instanzen](https://www.symcon.de/service/dokumentation/konzepte/instanzen/#Instanz_hinzufügen)
 
 __Konfigurationsseite__:
@@ -60,8 +60,8 @@ Die Funktionalität, die das Modul in der Visualisierung bietet.
 
 ### 7. PHP-Befehlsreferenz
 
-`boolean UN_BeispielFunktion(integer $InstanzID);`
+`boolean UNIFICG_BeispielFunktion(integer $InstanzID);`
 Erklärung der Funktion.
 
 Beispiel:
-`UN_BeispielFunktion(12345);`
+`UNIFICG_BeispielFunktion(12345);`

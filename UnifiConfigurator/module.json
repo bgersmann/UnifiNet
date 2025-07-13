@@ -1,7 +1,7 @@
 {
-    "id": "{75E5E0AD-02F4-61E0-E1AF-57F66DAF7381}",
-    "name": "UnifiClient",
-    "type": 3,
+    "id": "{D4B81AC5-A4B9-A1B4-8D76-DCE965E057D2}",
+    "name": "UnifiConfigurator",
+    "type": 4,
     "vendor": "Unifi",
     "aliases": [],
     "parentRequirements": [
@@ -11,6 +11,6 @@
     "implemented": [
         "{6E3E09BC-4C83-0ABF-4C97-7E7B8C70A64E}"
     ],
-    "prefix": "UNIFICL",
+    "prefix": "UNIFICG",
     "url": ""
 }

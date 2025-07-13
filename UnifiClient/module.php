@@ -1,105 +1,113 @@
 <?php
 
-declare( strict_types = 1 );
-require_once __DIR__.'/../libs/globalFun.php';
-// globale Funktionen
+declare(strict_types=1);
+	class UnifiClient extends IPSModule
+	{
+		public function Create()
+		{
+			//Never delete this line!
+			parent::Create();
 
-class UnifiClient extends IPSModule
-{
-    use myFunctions;
+			$this->ConnectParent('{A792D3EC-FEC5-A8E6-F792-E141097C6AB0}');
+			$this->RegisterPropertyString( 'ID', '' );
+			$this->RegisterPropertyInteger( 'Timer', '0' );
+			$this->RegisterTimer( 'Collect Data', 0, "UNIFICL_Send(\$_IPS['TARGET'],'getClientData');" );
+		}
 
-    public function Create()
-    {
-        //Never delete this line!
-        parent::Create();
-        $this->RegisterPropertyString( 'ServerAddress', '192.168.178.1' );
-        $this->RegisterPropertyString( 'APIKey', '' );
-        $this->RegisterPropertyString( 'Site', 'default' );
-        $this->RegisterPropertyString( 'ID', '' );
-        $this->RegisterPropertyInteger( 'Timer', '0' );
+		public function Destroy()
+		{
+			//Never delete this line!
+			parent::Destroy();
+		}
 
-        $this->RegisterTimer( 'Collect Data', 0, "UNIFICL_getDataClient(\$_IPS['TARGET']);" );
-    }
+		public function ApplyChanges()
+		{
+			//Never delete this line!
+			parent::ApplyChanges();
+			$vpos = 100;
+			$this->MaintainVariable( 'ClientName', $this->Translate( 'Client Name' ), 3, '', $vpos++, 1 );
+			$this->MaintainVariable( 'ID', $this->Translate( 'Client ID' ), 3, '', $vpos++, 1 );
+			$this->MaintainVariable( 'ClientType', $this->Translate( 'Client Type' ), 3, '', $vpos++, 1 );
+			$this->MaintainVariable( 'ClientIP', $this->Translate( 'Client IP' ), 3, '', $vpos++, 1 );
+			$this->MaintainVariable( 'ConnectedAt', $this->Translate( 'Verbunden Seit' ), 1, [ 'PRESENTATION' => VARIABLE_PRESENTATION_DATE_TIME ], $vpos++, 1 );
+			$this->MaintainVariable( 'Online', $this->Translate( 'Online' ), 0, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON'=> 'network-wired','OPTIONS'=>'[{"ColorDisplay":16077123,"Value":false,"Caption":"Offline","IconValue":"","IconActive":false,"ColorActive":true,"ColorValue":16077123,"Color":-1},{"ColorDisplay":1692672,"Value":true,"Caption":"Online","IconValue":"","IconActive":false,"ColorActive":true,"ColorValue":1692672,"Color":-1}]'], $vpos++, 1 );
+			$TimerMS = $this->ReadPropertyInteger( 'Timer' ) * 1000;
+			$this->SetTimerInterval( 'Collect Data', $TimerMS );
+			if ( 0 == $TimerMS )
+			{
+				// instance inactive
+				$this->SetStatus( 104 );
+			} else {
+				// instance active
+				$this->SetStatus( 102 );
+			}
+		}
 
-    public function Destroy()
-    {
-        //Never delete this line!
-        parent::Destroy();
-    }
+		public function Send(string $api)
+		{	
+			if ($this->GetStatus()==102 and $this->HasActiveParent()) {
+				$this->SendDataToParent(json_encode(['DataID' => '{4A5538F1-1C38-198A-3144-D806E0DADF87}',
+					'Api' => $api,
+					'InstanceID' => $this->InstanceID
+					]));
+			}			
+		}		
 
-    public function ApplyChanges()
-    {
-        //Never delete this line!
-        parent::ApplyChanges();
-        $vpos = 100;
-        $this->MaintainVariable( 'ClientName', $this->Translate( 'Client Name' ), 3, '', $vpos++, 1 );
-        $this->MaintainVariable( 'ID', $this->Translate( 'Client ID' ), 3, '', $vpos++, 1 );
-        $this->MaintainVariable( 'ClientType', $this->Translate( 'Client Type' ), 3, '', $vpos++, 1 );
-        $this->MaintainVariable( 'ClientIP', $this->Translate( 'Client IP' ), 3, '', $vpos++, 1 );
-        $this->MaintainVariable( 'ConnectedAt', $this->Translate( 'Verbunden Seit' ), 1, [ 'PRESENTATION' => VARIABLE_PRESENTATION_DATE_TIME ], $vpos++, 1 );
-        $this->MaintainVariable( 'Online', $this->Translate( 'Online' ), 0, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON'=> 'network-wired','OPTIONS'=>'[{"ColorDisplay":16077123,"Value":false,"Caption":"Offline","IconValue":"","IconActive":false,"ColorActive":true,"ColorValue":16077123,"Color":-1},{"ColorDisplay":1692672,"Value":true,"Caption":"Online","IconValue":"","IconActive":false,"ColorActive":true,"ColorValue":1692672,"Color":-1}]'], $vpos++, 1 );
 
-        $TimerMS = $this->ReadPropertyInteger( 'Timer' ) * 1000;
-        $this->SetTimerInterval( 'Collect Data', $TimerMS );
-        if ( 0 == $TimerMS )
-        {
-            // instance inactive
-            $this->SetStatus( 104 );
-        } else {
-            // instance active
-            $this->SetStatus( 102 );
-        }
-    }
+		public function ReceiveData($JSONString)
+		{
+			$data = json_decode($JSONString,true);
+			If ($data['id']== $this->InstanceID) {
+				//IPS_LogMessage('UNIFICL-'.$this->InstanceID,utf8_decode($data['data']));
+				switch($data['Api']) {
+					case "getClients":
+						$this->UpdateFormField("ID", "options", $data['data']);
+						$this->SetBuffer("clients", $data['data']);
+						break;
+					case "getClientData":
+						$array = json_decode($data['data'],true);
+						if ( is_array( $array ) && isset( $array ) ) {
+							if ( isset( $array[ 'statusCode' ] ) ) {
+								$this->SetValue( 'Online', false );
+							} else {
+								$this->SetValue( 'ClientName', $array[ 'name' ] );
+								$this->SetValue( 'ID', $array[ 'id' ] );
+								$this->SetValue( 'ClientType', $array[ 'type' ] );
+								if ( isset( $array[ 'ipAddress' ] ) ) {
+									$this->SetValue( 'ClientIP', $array[ 'ipAddress' ] );
+								}
+								$this->SetValue( 'ConnectedAt', strtotime( $array[ 'connectedAt' ] ) );
+								$this->SetValue( 'Online', true );
+							}
+						}
+						break;
+				}
+			}			
+		}
 
-    public function GetConfigurationForm()
-    {
-        $ServerAddress = $this->ReadPropertyString( 'ServerAddress' );
-        $APIKey = $this->ReadPropertyString( 'APIKey' );
-        $site = $this->ReadPropertyString( 'Site' );
-        if ( !empty( $APIKey ) ) {
-            $arrayOptions = $this->getSites();
-        } else {
-            $arrayOptions[] = array( 'caption' => 'default', 'value' => 'default' );
-        }
+		public function GetConfigurationForm(){
+			if ($this->GetStatus()==102 and $this->HasActiveParent()) {
+				$this->Send("getClients");
+			}			
+			$arrayStatus = array();
+			$arrayStatus[] = array( 'code' => 102, 'icon' => 'active', 'caption' => 'Instanz ist aktiv' );
 
-        $arrayStatus = array();
+			$arrayElements = array();
+			$arrayElements[] = array( 'type' => 'Label', 'label' => 'UniFi Client Device' );
+			$arrayElements[] = array( 'type' => 'NumberSpinner', 'name' => 'Timer', 'caption' => 'Timer (s) -> 0=Off' );
+			$Bufferdata = $this->GetBuffer("clients");
+			if ($Bufferdata=="") {
+				$arrayOptions[] = array( 'caption' => 'Test', 'value' => '' );
+			} else {
+				$arrayOptions=json_decode($Bufferdata);
+			}		
+			$arrayElements[] = array( 'type' => 'Select', 'name' => 'ID', 'caption' => 'Deivce ID', 'options' => $arrayOptions );
 
-        $arrayStatus[] = array( 'code' => 102, 'icon' => 'active', 'caption' => 'Instanz ist aktiv' );
-
-        $arrayElements = array();
-
-        $arrayElements[] = array( 'type' => 'Label', 'label' => 'UniFi Client Device' );
-
-        $arrayElements[] = array( 'type' => 'ValidationTextBox', 'name' => 'ServerAddress', 'caption' => 'Unifi Device IP', 'validate' => "^(([a-zA-Z0-9\\.\\-\\_]+(\\.[a-zA-Z]{2,3})+)|(\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b))$" );
-        $arrayElements[] = array( 'type' => 'ValidationTextBox', 'name' => 'APIKey', 'caption' => 'APIKey' );
-
-        #$arrayOptions[] = array( 'caption' => 'Test22', 'value' => 'Test' );
-        $arrayElements[] = array( 'type' => 'Select', 'name' => 'Site', 'caption' => 'Site', 'options' => $arrayOptions );
-
-        $arrayElements[] = array( 'type' => 'NumberSpinner', 'name' => 'Timer', 'caption' => 'Timer (s) -> 0=Off' );
-
-        unset( $arrayOptions );
-        #$arrayOptions[] = array( 'caption' => 'Test', 'value' => 'Test' );
-
-        if ( !empty( $site ) and !empty( $APIKey ) ) {
-            $siteID = $this->getSiteID( $site );
-            $arrayOptions = $this->getSites();
-            $arrayOptions = $this->getClients();
-        } else {
-            $arrayOptions[] = array( 'caption' => '', 'value' => '' );
-        }
-
-        $arrayElements[] = array( 'type' => 'Select', 'name' => 'ID', 'caption' => 'Deivce ID', 'options' => $arrayOptions );
-
-        $arrayActions = array();
-
-        $arrayActions[] = array( 'type' => 'Button', 'label' => 'Daten Holen', 'onClick' => 'UNIFICL_getDataClient($id);' );
-        $arrayActions[] = array( 'type' => 'Button', 'label' => 'Clients Holen', 'onClick' => 'UNIFICL_getClients($id);' );
-        $arrayActions[] = array( 'type' => 'Button', 'label' => 'Sites Holen', 'onClick' => 'UNIFICL_getSites($id);' );
-        //$arrayActions[] = array( 'type' => 'Button', 'label' => 'Stats Holen', 'onClick' => 'UNIFICL_getStatsClient($id);' );
-
-        return JSON_encode( array( 'status' => $arrayStatus, 'elements' => $arrayElements, 'actions' => $arrayActions ) );
-
-    }
-
-}
+			$arrayActions = array();
+			$arrayActions[] = array( 'type' => 'Button', 'label' => 'Clients auslesen', 'onClick' => 'UNIFICL_Send($id,"getClients");' );
+			$arrayActions[] = array( 'type' => 'Button', 'label' => 'Daten auslesen', 'onClick' => 'UNIFICL_Send($id,"getClientData");' );
+		
+			return JSON_encode( array( 'status' => $arrayStatus, 'elements' => $arrayElements, 'actions' => $arrayActions ) );
+			
+    	}
+	}

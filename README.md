@@ -1,6 +1,6 @@
-# UnifiNet
+# UnifiNetwork
 
-Folgende Module beinhaltet das UnifiNet Repository:
+Folgende Module beinhaltet das UnifiNetwork Repository:
 
 - __UnifiDevice__ ([Dokumentation](UnifiDevice))  
 	Kurze Beschreibung des Moduls.
@@ -8,5 +8,8 @@ Folgende Module beinhaltet das UnifiNet Repository:
 - __UnifiClient__ ([Dokumentation](UnifiClient))  
 	Kurze Beschreibung des Moduls.
 
-- __UnifiConfig__ ([Dokumentation](UnifiConfig))  
+- __UnifiConfigurator__ ([Dokumentation](UnifiConfigurator))  
+	Kurze Beschreibung des Moduls.
+
+- __UnifiGateway__ ([Dokumentation](UnifiGateway))  
 	Kurze Beschreibung des Moduls.
