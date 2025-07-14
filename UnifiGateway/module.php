@@ -259,6 +259,7 @@ class UnifiGateway extends IPSModule
         if ( is_array( $JSONData ) && isset( $JSONData ) )
         {
             $devices = $JSONData[ 'data' ];
+            $this->SendDebug("UnifiGW", json_encode($devices), 0);
             usort( $devices, function ( $a, $b ) {
                 return $a[ 'name' ]>$b[ 'name' ];
                 });
@@ -266,7 +267,7 @@ class UnifiGateway extends IPSModule
                 $value[] = array(
                     'Name'	=>$device[ 'name' ],
                     'Type'	=>$device[ 'model' ],
-                    'ID'		=>$device[ 'id' ],
+                    'ID'		=>isset( $device[ 'id' ] ) ? $device[ 'id' ] : '' ,
                     'IP'		=>$device[ 'ipAddress' ],
                     'instanceID'	=>$this->getInstanceIDForGuid( $device['id'], '{19A9D2AF-BD00-461A-58E1-7BF7A0CA19A6}' ),
                     'create' 		=>[
