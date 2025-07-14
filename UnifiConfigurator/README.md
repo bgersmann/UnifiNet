@@ -13,16 +13,15 @@ Beschreibung des Moduls.
 
 ### 1. Funktionsumfang
 
-*
+* Zeigt alle Geräte und Clients der Unifi Site da und ermöglicht ein schneller erstellen als eigene Instanzen.
 
 ### 2. Voraussetzungen
 
-- IP-Symcon ab Version 7.1
+- IP-Symcon ab Version 8.0
 
 ### 3. Software-Installation
 
-* Über den Module Store das 'UnifiConfigurator'-Modul installieren.
-* Alternativ über das Module Control folgende URL hinzufügen
+* Über den Module Store das 'UnifiNet'-Modul installieren.
 
 ### 4. Einrichten der Instanzen in IP-Symcon
 
@@ -33,8 +32,7 @@ __Konfigurationsseite__:
 
 Name     | Beschreibung
 -------- | ------------------
-         |
-         |
+Unifi Devices | Zeigt alle Unifi Geräte und Clients an
 
 ### 5. Statusvariablen und Profile
 
@@ -42,26 +40,16 @@ Die Statusvariablen/Kategorien werden automatisch angelegt. Das Löschen einzeln
 
 #### Statusvariablen
 
-Name   | Typ     | Beschreibung
------- | ------- | ------------
-       |         |
-       |         |
+Keine vorhanden
 
 #### Profile
 
-Name   | Typ
------- | -------
-       |
-       |
+Keine vorhanden
 
 ### 6. Visualisierung
 
-Die Funktionalität, die das Modul in der Visualisierung bietet.
+Keine vorhanden
 
 ### 7. PHP-Befehlsreferenz
 
-`boolean UNIFICG_BeispielFunktion(integer $InstanzID);`
-Erklärung der Funktion.
-
-Beispiel:
-`UNIFICG_BeispielFunktion(12345);`
+Keine vorhanden

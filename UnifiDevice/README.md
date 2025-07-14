@@ -13,16 +13,15 @@ Beschreibung des Moduls.
 
 ### 1. Funktionsumfang
 
-*
+* Zeigt die Daten eines Unifi Geräts an
 
 ### 2. Voraussetzungen
 
-- IP-Symcon ab Version 7.1
+- IP-Symcon ab Version 8.0
 
 ### 3. Software-Installation
 
-* Über den Module Store das 'UnifiDevice'-Modul installieren.
-* Alternativ über das Module Control folgende URL hinzufügen
+* Über den Module Store das 'UnifiNet'-Modul installieren.
 
 ### 4. Einrichten der Instanzen in IP-Symcon
 
@@ -33,8 +32,8 @@ __Konfigurationsseite__:
 
 Name     | Beschreibung
 -------- | ------------------
-         |
-         |
+Timer    | Timer des Abfrageintervalls. 0 = Deaktiviert
+Device-ID| Bitte das Gerät aus der Liste wählen. 
 
 ### 5. Statusvariablen und Profile
 
@@ -44,24 +43,17 @@ Die Statusvariablen/Kategorien werden automatisch angelegt. Das Löschen einzeln
 
 Name   | Typ     | Beschreibung
 ------ | ------- | ------------
-       |         |
-       |         |
+Stellt die Verfügbaren abfrage punkte der API dar. 
+Anzahl der Variablen kann je nach Gerät variieren.
 
 #### Profile
 
-Name   | Typ
------- | -------
-       |
-       |
+Keine vorhanden
 
 ### 6. Visualisierung
 
-Die Funktionalität, die das Modul in der Visualisierung bietet.
+Keine vorhanden
 
 ### 7. PHP-Befehlsreferenz
 
-`boolean UNIFIDV_BeispielFunktion(integer $InstanzID);`
-Erklärung der Funktion.
-
-Beispiel:
-`UNIFIDV_BeispielFunktion(12345);`
+Keine vorhanden

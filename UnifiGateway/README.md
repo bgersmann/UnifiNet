@@ -13,16 +13,15 @@ Beschreibung des Moduls.
 
 ### 1. Funktionsumfang
 
-*
+* Die Schnittstelle zwischen Symcon und der Local Unifi Network API
 
 ### 2. Voraussetzungen
 
-- IP-Symcon ab Version 7.1
+- IP-Symcon ab Version 8.0
 
 ### 3. Software-Installation
 
-* Über den Module Store das 'UnifiGateway'-Modul installieren.
-* Alternativ über das Module Control folgende URL hinzufügen
+* Über den Module Store das 'UnifiNet'-Modul installieren.
 
 ### 4. Einrichten der Instanzen in IP-Symcon
 
@@ -33,35 +32,25 @@ __Konfigurationsseite__:
 
 Name     | Beschreibung
 -------- | ------------------
-         |
-         |
-
+Unifi Device IP      | IP Adresse des Gateways mit dem UNA Controller
+APIKey               | API Key bitte unter "UniFi Network > Settings > Control Plane > Integrations" erzeugen
+Site                 | Nach übernehmen der IP + ApiKey kann die gewünschte Site ausgewählt werden
 ### 5. Statusvariablen und Profile
 
 Die Statusvariablen/Kategorien werden automatisch angelegt. Das Löschen einzelner kann zu Fehlfunktionen führen.
 
 #### Statusvariablen
 
-Name   | Typ     | Beschreibung
------- | ------- | ------------
-       |         |
-       |         |
+Keine vorhanden
 
 #### Profile
 
-Name   | Typ
------- | -------
-       |
-       |
+Keine vorhanden
 
 ### 6. Visualisierung
 
-Die Funktionalität, die das Modul in der Visualisierung bietet.
+Keine vorhanden
 
 ### 7. PHP-Befehlsreferenz
 
-`boolean UNIFIGW_BeispielFunktion(integer $InstanzID);`
-Erklärung der Funktion.
-
-Beispiel:
-`UNIFIGW_BeispielFunktion(12345);`
+Keine vorhanden

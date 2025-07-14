@@ -97,12 +97,14 @@ class UnifiGateway extends IPSModule
         $arrayStatus = array();
 
         $arrayStatus[] = array( 'code' => 102, 'icon' => 'active', 'caption' => 'Instanz ist aktiv' );
+        $arrayStatus[] = array( 'code' => 401, 'icon' => 'inactive', 'caption' => 'Instanz ist fehlerhaft: Unauthorized' );
 
         $arraySort = array();
         #$arraySort = array( 'column' => 'DeviceName', 'direction' => 'ascending' );
 
         $arrayElements = array();
         $arrayElements[] = array( 'type' => 'Label', 'label' => 'UniFi Device Configurator' );
+        $arrayElements[] = array( 'type' => 'Label', 'label' => 'Bitte API Key unter "UniFi Network > Settings > Control Plane > Integrations" erzeugen');
         $arrayElements[] = array( 'type' => 'ValidationTextBox', 'name' => 'ServerAddress', 'caption' => 'Unifi Device IP', 'validate' => "^(([a-zA-Z0-9\\.\\-\\_]+(\\.[a-zA-Z]{2,3})+)|(\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b))$" );
         $arrayElements[] = array( 'type' => 'ValidationTextBox', 'name' => 'APIKey', 'caption' => 'APIKey' );
         $arrayElements[] = array( 'type' => 'Select', 'name' => 'Site', 'caption' => 'Site', 'options' => $arrayOptions );
@@ -130,12 +132,29 @@ class UnifiGateway extends IPSModule
         $RawData = curl_exec( $ch );
         curl_close( $ch );
         $JSONData = json_decode( $RawData, true );
+        if ( isset( $array[ 'statusCode' ] ) ) {
+            if ($array[ 'statusCode' ]<> 200) {
+                // instance inactive
+			    $this->SetStatus( $array[ 'statusCode' ] );
+            }        
+        }
         return $JSONData;
     }
 
     public function getSites():array {
-        $JSONData = $this->getApiData();
+        $JSONData = $this->getApiData();       
         if ( is_array( $JSONData ) && isset( $JSONData ) ) {
+            if ( isset( $JSONData['error'] ) ) {
+                if ($JSONData['error']['code']<> 200) {
+                    // instance inactive
+                    $this->SetStatus( $JSONData['error']['code'] );
+                    $value[] = [
+                        'caption'=>'default',
+                        'value'=> 'default'
+                    ];
+                    return $value;
+                }        
+            }
             $sites = $JSONData[ 'data' ];
             foreach ( $sites as $site ) {
                 $value[] = [
