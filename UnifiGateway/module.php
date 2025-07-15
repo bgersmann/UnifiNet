@@ -289,11 +289,11 @@ class UnifiGateway extends IPSModule
                     'Type'	=>$device[ 'model' ],
                     'ID'		=>isset( $device[ 'id' ] ) ? $device[ 'id' ] : '' ,
                     'IP'		=>$device[ 'ipAddress' ],
-                    'instanceID'	=>$this->getInstanceIDForGuid( $device['id'], '{19A9D2AF-BD00-461A-58E1-7BF7A0CA19A6}' ),
+                    'instanceID'	=>$this->getInstanceIDForGuid( isset( $device[ 'id' ] ) ? $device[ 'id' ] : '', '{19A9D2AF-BD00-461A-58E1-7BF7A0CA19A6}' ),
                     'create' 		=>[
                         'moduleID'      => '{19A9D2AF-BD00-461A-58E1-7BF7A0CA19A6}',
                         'configuration' => [
-                            'ID'	=> $device['id']
+                            'ID'	=> isset( $device[ 'id' ] ) ? $device[ 'id' ] : ''
                         ],
                         'name' => $device[ 'name' ]
                     ] );
