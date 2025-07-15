@@ -1,8 +1,13 @@
 {
     "translations": {
         "de": {
-            "Translation 1": "Übersetzung 1",
-            "Translation 2": "Übersetzung 2"
+            "Client Name": "Endgeräte Name",
+            "Client ID": "Endgeräte ID",
+            "Client Type":"Endgeräte Typ",
+            "Client IP":"Endgeräte IP",
+            "Connected At":"Verbunden Seit",
+            "Uplink Device":"Übergeordnetes Gerät",
+            "UniFi Client":"UniFi Endgerät"
         }
     }
 }

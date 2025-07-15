@@ -11,7 +11,7 @@ declare(strict_types=1);
 			$this->ConnectParent('{A792D3EC-FEC5-A8E6-F792-E141097C6AB0}');
 			$this->RegisterPropertyString( 'ID', '' );
 			$this->RegisterPropertyInteger( 'Timer', '0' );
-			$this->RegisterTimer( 'Collect Data', 0, "UNIFICL_Send(\$_IPS['TARGET'],'getClientData');" );
+			$this->RegisterTimer( 'Collect Data', 0, "UNIFICL_Send(\$_IPS['TARGET'],'getClientData','');" );
 		}
 
 		public function Destroy()
@@ -29,8 +29,9 @@ declare(strict_types=1);
 			$this->MaintainVariable( 'ID', $this->Translate( 'Client ID' ), 3, '', $vpos++, 1 );
 			$this->MaintainVariable( 'ClientType', $this->Translate( 'Client Type' ), 3, '', $vpos++, 1 );
 			$this->MaintainVariable( 'ClientIP', $this->Translate( 'Client IP' ), 3, '', $vpos++, 1 );
-			$this->MaintainVariable( 'ConnectedAt', $this->Translate( 'Verbunden Seit' ), 1, [ 'PRESENTATION' => VARIABLE_PRESENTATION_DATE_TIME ], $vpos++, 1 );
+			$this->MaintainVariable( 'ConnectedAt', $this->Translate( 'Connected At' ), 1, [ 'PRESENTATION' => VARIABLE_PRESENTATION_DATE_TIME ], $vpos++, 1 );
 			$this->MaintainVariable( 'Online', $this->Translate( 'Online' ), 0, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON'=> 'network-wired','OPTIONS'=>'[{"ColorDisplay":16077123,"Value":false,"Caption":"Offline","IconValue":"","IconActive":false,"ColorActive":true,"ColorValue":16077123,"Color":-1},{"ColorDisplay":1692672,"Value":true,"Caption":"Online","IconValue":"","IconActive":false,"ColorActive":true,"ColorValue":1692672,"Color":-1}]'], $vpos++, 1 );
+			$this->MaintainVariable( 'UplinkDevice', $this->Translate( 'Uplink Device' ), 3, '', $vpos++, 1 );
 			$TimerMS = $this->ReadPropertyInteger( 'Timer' ) * 1000;
 			$this->SetTimerInterval( 'Collect Data', $TimerMS );
 			if ( 0 == $TimerMS )
@@ -43,12 +44,13 @@ declare(strict_types=1);
 			}
 		}
 
-		public function Send(string $api)
+		public function Send(string $api, string $param1)
 		{	
 			if ($this->HasActiveParent()) {
 				$this->SendDataToParent(json_encode(['DataID' => '{4A5538F1-1C38-198A-3144-D806E0DADF87}',
 					'Api' => $api,
-					'InstanceID' => $this->InstanceID
+					'InstanceID' => $this->InstanceID,
+					'Param1' => $param1
 					]));
 			}			
 		}		
@@ -78,8 +80,15 @@ declare(strict_types=1);
 								}
 								$this->SetValue( 'ConnectedAt', strtotime( $array[ 'connectedAt' ] ) );
 								$this->SetValue( 'Online', true );
+								if ( isset( $array['uplinkDeviceId'] ) ) {
+									$this->Send('getDeviceName',$array['uplinkDeviceId']);									
+								}
 							}
 						}
+						break;
+					case "getDeviceName":
+						$this->SendDebug("UnifiCL", $data['data'], 0);
+						$this->SetValue( 'UplinkDevice', $data['data']);
 						break;
 				}
 			}			
@@ -87,13 +96,13 @@ declare(strict_types=1);
 
 		public function GetConfigurationForm(){
 			if ($this->HasActiveParent()) {
-				$this->Send("getClients");
+				$this->Send("getClients",'');
 			}			
 			$arrayStatus = array();
 			$arrayStatus[] = array( 'code' => 102, 'icon' => 'active', 'caption' => 'Instanz ist aktiv' );
 
 			$arrayElements = array();
-			$arrayElements[] = array( 'type' => 'Label', 'label' => 'UniFi Client Device' );
+			$arrayElements[] = array( 'type' => 'Label', 'label' => $this->Translate('UniFi Client') );
 			$arrayElements[] = array( 'type' => 'NumberSpinner', 'name' => 'Timer', 'caption' => 'Timer (s) -> 0=Off' );
 			$Bufferdata = $this->GetBuffer("clients");
 			if ($Bufferdata=="") {
@@ -104,8 +113,8 @@ declare(strict_types=1);
 			$arrayElements[] = array( 'type' => 'Select', 'name' => 'ID', 'caption' => 'Client ID', 'options' => $arrayOptions );
 
 			$arrayActions = array();
-			$arrayActions[] = array( 'type' => 'Button', 'label' => 'Clients auslesen', 'onClick' => 'UNIFICL_Send($id,"getClients");' );
-			$arrayActions[] = array( 'type' => 'Button', 'label' => 'Daten auslesen', 'onClick' => 'UNIFICL_Send($id,"getClientData");' );
+			$arrayActions[] = array( 'type' => 'Button', 'label' => 'Clients auslesen', 'onClick' => 'UNIFICL_Send($id,"getClients","");' );
+			$arrayActions[] = array( 'type' => 'Button', 'label' => 'Daten auslesen', 'onClick' => 'UNIFICL_Send($id,"getClientData","");' );
 		
 			return JSON_encode( array( 'status' => $arrayStatus, 'elements' => $arrayElements, 'actions' => $arrayActions ) );
 			

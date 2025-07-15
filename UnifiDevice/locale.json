@@ -1,8 +1,16 @@
 {
     "translations": {
         "de": {
-            "Translation 1": "Übersetzung 1",
-            "Translation 2": "Übersetzung 2"
+            "Device Name": "Geräte Name",
+            "Device ID": "Geräte ID",
+            "Device Model":"Geräte Modell",
+            "Device IP":"Geräte IP",
+            "Uplink Device":"Übergeordnetes Gerät",
+            "CPU Utilization":"CPU Auslastung",
+            "Memory Utilization":"Arbeitsspeicher Auslastung",
+            "UptimeSec":"Laufzeit",
+            "Utilization Statistics auslesen (CPU + Memory)":"Auslastung auslesen (CPU+Arbeitsspeicher)",
+            "UniFi Device":"UniFi Gerät"
         }
     }
 }

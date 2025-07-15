@@ -75,6 +75,14 @@ class UnifiGateway extends IPSModule
                     $jsonString = $this->getDeviceStats(IPS_GetProperty( $data->InstanceID, 'ID' ));
 					$this->send($data->InstanceID,$data->Api,$jsonString);
                     break;
+                case "getDeviceName":
+                    $this->SendDebug("UnifiGW", json_encode($data), 0);
+                    if (isset($data->Param1)){
+                        $jsonString = $this->getDeviceName($data->Param1);
+
+                        $this->send($data->InstanceID,$data->Api,$jsonString);
+                    }                   
+                    break;
 			}
 			
 		}
@@ -82,7 +90,10 @@ class UnifiGateway extends IPSModule
 
     public function Send( int $id,string $Api, string $Text )
     {
-        $this->SendDataToChildren( json_encode( [ 'DataID' => '{6E3E09BC-4C83-0ABF-4C97-7E7B8C70A64E}', 'id' =>  $id,'Api'=> $Api,'data'=> $Text ] ) );		
+        $this->SendDataToChildren( json_encode( [ 'DataID' => '{6E3E09BC-4C83-0ABF-4C97-7E7B8C70A64E}', 
+                                                'id' =>  $id,
+                                                'Api'=> $Api,
+                                                'data'=> $Text ] ) );		
     }
 
     public function GetConfigurationForm() {
@@ -239,6 +250,15 @@ class UnifiGateway extends IPSModule
             return json_encode($JSONData);
         }
 
+     public function getDeviceName(string $deviceID):string {
+            $site = $this->ReadPropertyString( 'Site' );
+            $siteID = $this->getSiteID( $site );        
+            $JSONData = $this->getApiData( '/'.$siteID.'/devices/'.$deviceID );
+            if (isset($JSONData['name'])){
+                return $JSONData['name'];
+            }
+            return '';
+        }
     private function getInstanceIDForGuid( $id, $guid )
     {
         $instanceIDs = IPS_GetInstanceListByModuleID( $guid );

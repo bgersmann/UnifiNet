@@ -11,7 +11,8 @@ declare(strict_types=1);
 			$this->ConnectParent('{A792D3EC-FEC5-A8E6-F792-E141097C6AB0}');
 			$this->RegisterPropertyString( 'ID', '' );
         	$this->RegisterPropertyInteger( 'Timer', '0' );
-        	$this->RegisterTimer( 'Collect Data', 0, "UNIFIDV_Send(\$_IPS['TARGET'],'getDeviceData');" );
+        	$this->RegisterTimer( 'Collect Data', 0, "UNIFIDV_Send(\$_IPS['TARGET'],'getDeviceData','');" );
+			$this->RegisterPropertyBoolean("Utilization", 0);
 		}
 
 		public function Destroy()
@@ -35,6 +36,13 @@ declare(strict_types=1);
 			$this->MaintainVariable( 'UplinkTX', $this->Translate( 'UplinkTX' ), 2, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'DIGITS'=> 3 , 'SUFFIX'=> 'Mbit/s' , 'ICON'=> 'network-wired'] , $vpos++, 1 );
 			$this->MaintainVariable( 'UplinkRX', $this->Translate( 'UplinkRX' ), 2, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'DIGITS'=> 3 , 'SUFFIX'=> 'Mbit/s' , 'ICON'=> 'network-wired'], $vpos++, 1 );
 			$this->MaintainVariable( 'Online', $this->Translate( 'Online' ), 0, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON'=> 'network-wired','OPTIONS'=>'[{"ColorDisplay":16077123,"Value":false,"Caption":"Offline","IconValue":"","IconActive":false,"ColorActive":true,"ColorValue":16077123,"Color":-1},{"ColorDisplay":1692672,"Value":true,"Caption":"Online","IconValue":"","IconActive":false,"ColorActive":true,"ColorValue":1692672,"Color":-1}]'], $vpos++, 1 );
+			$this->MaintainVariable( 'UplinkDevice', $this->Translate( 'Uplink Device' ), 3, '', $vpos++, 1 );
+
+			$this->MaintainVariable( 'CPU', $this->Translate( 'CPU Utilization' ), 2, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'DIGITS'=> 2 , 'SUFFIX'=> ' %' , 'ICON'=> 'laptop-binary'], $vpos++, $this->ReadPropertyBoolean("Utilization") );
+			$this->MaintainVariable( 'Memory', $this->Translate( 'Memory Utilization' ), 2, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'DIGITS'=> 2 , 'SUFFIX'=> ' %' , 'ICON'=> 'laptop-binary'], $vpos++, $this->ReadPropertyBoolean("Utilization") );
+			
+
+
 
 			$TimerMS = $this->ReadPropertyInteger( 'Timer' ) * 1000;
 			$this->SetTimerInterval( 'Collect Data', $TimerMS );
@@ -48,12 +56,13 @@ declare(strict_types=1);
 			}
 		}
 
-		public function Send(string $api)
+		public function Send(string $api, string $param1)
 		{
 			if ($this->HasActiveParent()) {
 				$this->SendDataToParent(json_encode(['DataID' => '{4A5538F1-1C38-198A-3144-D806E0DADF87}',
 					'Api' => $api,
-					'InstanceID' => $this->InstanceID
+					'InstanceID' => $this->InstanceID,
+					'Param1' => $param1
 					]));
 			}			
 		}
@@ -75,9 +84,11 @@ declare(strict_types=1);
 							$this->SetValue( 'UptimeSec', (( isset($JSONData[ 'uptimeSec' ]) ) ? $JSONData[ 'uptimeSec' ] : 0) );
 							$this->SetValue( 'UplinkTX', round( (( isset($JSONData[ 'uplink' ][ 'txRateBps' ]) ) ? $JSONData[ 'uplink' ][ 'txRateBps' ]/1000/1000 : 0),3 ) );
 							$this->SetValue( 'UplinkRX', round( (( isset($JSONData[ 'uplink' ][ 'rxRateBps' ]) ) ? $JSONData[ 'uplink' ][ 'rxRateBps' ]/1000/1000 : 0),3 ) );
+							if ($this->ReadPropertyBoolean("Utilization")) {
+								$this->SetValue( 'CPU', (( isset($JSONData[ 'cpuUtilizationPct' ]) ) ? $JSONData[ 'cpuUtilizationPct' ] : 0) );
+								$this->SetValue( 'Memory', (( isset($JSONData[ 'memoryUtilizationPct' ]) ) ? $JSONData[ 'memoryUtilizationPct' ] : 0) );
+							}
 						}
-
-
 					break;
 					case "getDeviceData":
 						$JSONData = json_decode($data['data'],true);
@@ -92,6 +103,10 @@ declare(strict_types=1);
 								$this->SetValue( 'Firmware', $JSONData[ 'firmwareVersion' ] );
 								$this->SetValue( 'FirmwareUpdate', $JSONData[ 'firmwareUpdatable' ] );
 								$this->SetValue( 'Online', ( $JSONData[ 'state' ] == 'ONLINE' ) ? true : false );
+																
+								if ( isset( $JSONData['uplink']['deviceId'] ) ) {
+									$this->Send('getDeviceName',$JSONData['uplink']['deviceId']);	
+								}
 								if ( isset( $JSONData[ 'interfaces' ] ) ) {
 									if ( isset( $JSONData[ 'interfaces' ][ 'ports' ] ) ) {
 										$ports = $JSONData[ 'interfaces' ][ 'ports' ];
@@ -158,8 +173,12 @@ declare(strict_types=1);
 								}
 							}
 						}
-						$this->Send("getDeviceStats");					
+						$this->Send('getDeviceStats','');				
 						//IPS_LogMessage('UNIFICL-'.$this->InstanceID,var_dump($array));						
+						break;
+					case "getDeviceName":
+						$this->SendDebug('UnifiDV', $data['data'], 0);
+						$this->SetValue( 'UplinkDevice', $data['data']);
 						break;
 				}
 			}			
@@ -167,13 +186,13 @@ declare(strict_types=1);
 
 		public function GetConfigurationForm(){       
 			if ($this->HasActiveParent()) {
-				$this->Send("getDevices");
+				$this->Send('getDevices','');
 			}	
 			$arrayStatus = array();
 			$arrayStatus[] = array( 'code' => 102, 'icon' => 'active', 'caption' => 'Instanz ist aktiv' );
 
 			$arrayElements = array();
-			$arrayElements[] = array( 'type' => 'Label', 'label' => 'UniFi Device' ); 
+			$arrayElements[] = array( 'type' => 'Label', 'label' => $this->Translate('UniFi Device')); 
 			$arrayElements[] = array( 'type' => 'NumberSpinner', 'name' => 'Timer', 'caption' => 'Timer (s) -> 0=Off' );
 
 			$Bufferdata = $this->GetBuffer("devices");
@@ -183,12 +202,13 @@ declare(strict_types=1);
 				$arrayOptions=json_decode($Bufferdata);
 			}		
 			$arrayElements[] = array( 'type' => 'Select', 'name' => 'ID', 'caption' => 'Device ID', 'options' => $arrayOptions );
+			$arrayElements[] = array( 'type' => 'CheckBox', 'name' => 'Utilization', 'caption' => $this->Translate('Utilization Statistics auslesen (CPU + Memory)') );
 
 			$arrayActions = array();
 
-			$arrayActions[] = array( 'type' => 'Button', 'label' => 'Devices Holen', 'onClick' => 'UNIFIDV_Send($id,"getDevices");' );
-			$arrayActions[] = array( 'type' => 'Button', 'label' => 'Daten Holen', 'onClick' => 'UNIFIDV_Send($id,"getDeviceData");' );
-			$arrayActions[] = array( 'type' => 'Button', 'label' => 'Stats Holen', 'onClick' => 'UNIFIDV_Send($id,"getDeviceStats");' );
+			$arrayActions[] = array( 'type' => 'Button', 'label' => 'Devices Holen', 'onClick' => 'UNIFIDV_Send($id,"getDevices","");' );
+			$arrayActions[] = array( 'type' => 'Button', 'label' => 'Daten Holen', 'onClick' => 'UNIFIDV_Send($id,"getDeviceData","");' );
+			$arrayActions[] = array( 'type' => 'Button', 'label' => 'Stats Holen', 'onClick' => 'UNIFIDV_Send($id,"getDeviceStats","");' );
 
 			return JSON_encode( array( 'status' => $arrayStatus, 'elements' => $arrayElements, 'actions' => $arrayActions ) );
 	    }
