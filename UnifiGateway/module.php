@@ -276,6 +276,7 @@ class UnifiGateway extends IPSModule
         $site = $this->ReadPropertyString( 'Site' );
         $siteID = $this->getSiteID( $site );
         $JSONData = $this->getApiData( '/'.$siteID.'/devices?limit=200' );
+
         if ( is_array( $JSONData ) && isset( $JSONData ) )
         {
             $devices = $JSONData[ 'data' ];
@@ -283,23 +284,26 @@ class UnifiGateway extends IPSModule
             usort( $devices, function ( $a, $b ) {
                 return $a[ 'name' ]>$b[ 'name' ];
                 });
-            foreach ( $devices as $device ) {
-                $value[] = array(
+            foreach ( $devices as $device ) {                         
+                $addValue = array(
                     'Name'	=>$device[ 'name' ],
                     'Type'	=>$device[ 'model' ],
-                    'ID'		=>isset( $device[ 'id' ] ) ? $device[ 'id' ] : '' ,
+                    'ID'		=>isset( $device[ 'id' ] ) ? $device[ 'id' ] : 'missing' ,
                     'IP'		=>$device[ 'ipAddress' ],
-                    'instanceID'	=>$this->getInstanceIDForGuid( isset( $device[ 'id' ] ) ? $device[ 'id' ] : '', '{19A9D2AF-BD00-461A-58E1-7BF7A0CA19A6}' ),
-                    'create' 		=>[
+                    'instanceID'	=>$this->getInstanceIDForGuid( isset( $device[ 'id' ] ) ? $device[ 'id' ] : '', '{19A9D2AF-BD00-461A-58E1-7BF7A0CA19A6}' )
+                );
+                if (isset($device['id']) and !empty($device['id'])) {
+                    $addValue['create'] = array(
                         'moduleID'      => '{19A9D2AF-BD00-461A-58E1-7BF7A0CA19A6}',
                         'configuration' => [
                             'ID'	=> isset( $device[ 'id' ] ) ? $device[ 'id' ] : ''
                         ],
                         'name' => $device[ 'name' ]
-                    ] );
-
+                    );
                 }
+                $value[] = $addValue;
             }
+        }
             $JSONData = $this->getApiData( '/'.$siteID.'/clients?limit=200' );
             if ( is_array( $JSONData ) && isset( $JSONData ) ) {
                 $clients = $JSONData[ 'data' ];
@@ -308,19 +312,23 @@ class UnifiGateway extends IPSModule
                 });
                 foreach ( $clients as $client )
                 {
-                    $value[] = array(
+                   $addValue = array(
                         'Name'	=>$client[ 'name' ],
                         'Type'	=>'Client',
-                        'ID'		=>$client[ 'id' ],
+                        'ID'		=>isset( $client[ 'id' ] ) ? $client[ 'id' ] : 'missing' ,
                         'IP'		=>isset( $client[ 'ipAddress' ] ) ? $client[ 'ipAddress' ] : '',
-                        'instanceID'	=>$this->getInstanceIDForGuid( $client[ 'id' ], '{75E5E0AD-02F4-61E0-E1AF-57F66DAF7381}' ),
-                        'create' 		=>[
+                        'instanceID'	=>$this->getInstanceIDForGuid( $client[ 'id' ], '{75E5E0AD-02F4-61E0-E1AF-57F66DAF7381}' )
+                        );
+                        if (isset($client['id']) and !empty($client['id'])) {
+                            $addValue['create'] = array(
                             'moduleID'      => '{75E5E0AD-02F4-61E0-E1AF-57F66DAF7381}',
                             'configuration' => [
-                                'ID'	=> $client[ 'id' ]
+                                'ID'	=> isset( $client[ 'id' ] ) ? $client[ 'id' ] : ''
                             ],
                             'name' => $client[ 'name' ]
-                        ] );
+                            );
+                        }
+                    $value[] = $addValue;
                     }
                 }
                 return json_encode($value);
