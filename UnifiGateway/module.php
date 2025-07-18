@@ -50,8 +50,6 @@ class UnifiGateway extends IPSModule
 			$this->SetStatus( 102 );
 		}
 
-        
-        //IPS_LogMessage( 'UNIFIGW', utf8_decode( strval($data->InstanceID) ) );
 		if (isset($data->Api)) {
 			switch ($data->Api) {
 				case "getClients":
@@ -135,12 +133,10 @@ class UnifiGateway extends IPSModule
             if ($this->ReadPropertyBoolean("applicationVersion")) {
                  $this->SetValue('applicationVersion', $this->getNetworkVersion());
             }
-            $arrayElements[] = array( 'type' => 'Label', 'label' => 'API Version: '.$this->getNetworkVersion() );
-           
+            $arrayElements[] = array( 'type' => 'Label', 'label' => 'Network Application Version: '.$this->getNetworkVersion() );           
         } else {
-            $arrayElements[] = array( 'type' => 'Label', 'label' => 'API Version: not found' );
+            $arrayElements[] = array( 'type' => 'Label', 'label' => 'Network Application Version: not found' );
         }
-
         $arrayActions = array();
 
         return JSON_encode( array( 'status' => $arrayStatus, 'elements' => $arrayElements, 'actions' => $arrayActions ) );
@@ -148,8 +144,6 @@ class UnifiGateway extends IPSModule
     }
 
     public function getApiData( string $endpoint = '' ):array {
-        $ServerAddress = $this->ReadPropertyString( 'ServerAddress' );
-        $APIKey = $this->ReadPropertyString( 'APIKey' );
         $ServerAddress = $this->ReadPropertyString( 'ServerAddress' );
         $APIKey = $this->ReadPropertyString( 'APIKey' );
 
@@ -209,6 +203,7 @@ class UnifiGateway extends IPSModule
             }            
             return $value;
         }
+        return [];
     }
 
     public function getNetworkVersion():string {
@@ -233,7 +228,7 @@ class UnifiGateway extends IPSModule
             // Handle error
             $this->SendDebug("UnifiGW", "Curl error: " . curl_error($ch), 0);
             $this->SetStatus( 201 ); // Set status to error
-            return [];
+            return '';
         }
         $JSONData = json_decode( $RawData, true );
         $this->SendDebug("UnifiGW", json_encode($JSONData), 0);
@@ -276,7 +271,7 @@ class UnifiGateway extends IPSModule
             if (isset($JSONData[ 'data' ])) {
                 $clients = $JSONData[ 'data' ];
                 usort( $clients, function ( $a, $b ) {
-                    return $a[ 'name' ]>$b[ 'name' ];
+                    return strcmp($a['name'], $b['name']);
                 });
 
                 foreach ( $clients as $client ) {
@@ -311,8 +306,8 @@ class UnifiGateway extends IPSModule
             if (isset($JSONData[ 'data' ])) {
                 $devices = $JSONData[ 'data' ];
                 usort( $devices, function ( $a, $b ) {
-                    return $a[ 'name' ]>$b[ 'name' ];
-                    });
+                    return strcmp($a['name'], $b['name']);
+                });
 
                 foreach ( $devices as $device ) {
                     $value[] = [

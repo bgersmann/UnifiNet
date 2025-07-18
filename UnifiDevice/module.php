@@ -3,6 +3,9 @@
 declare(strict_types=1);
 	class UnifiDevice extends IPSModule
 	{
+        private const COLOR_YELLOW = 16776960;
+        private const COLOR_GREEN = 1692672;
+        private const COLOR_RED = 16077123;
 		public function Create()
 		{
 			//Never delete this line!
@@ -128,12 +131,12 @@ declare(strict_types=1);
 										foreach ( $ports as $port ) {
 											if ($port[ 'state' ]== 'UP') {                                
 												if ($port[ 'speedMbps' ]<=100) {                                   
-													$colSymbol=16776960; //gelb
+													$colSymbol=self::COLOR_YELLOW; //gelb
 												} else {
-													$colSymbol=1692672; //gruen
+													$colSymbol=self::COLOR_GREEN; //gruen
 												}                                
 											} else {
-												$colSymbol=16077123; //rot
+												$colSymbol=self::COLOR_RED; //rot
 											}
 
 											$this->MaintainVariable( 'Port_'.$port[ 'idx' ], $this->Translate( 'Port '.$port[ 'idx' ].($port['connector']== 'RJ45' ? '' : '-'.$port['connector'])), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'COLOR'=>$colSymbol,'ICON'=>'ethernet'], $vpos++, $this->ReadPropertyBoolean("PortsAnzeigen") );
@@ -150,10 +153,10 @@ declare(strict_types=1);
 
 											if ( isset( $port[ 'poe' ] ) ) {
 												if ($port[ 'poe' ]['state']=='UP') {
-													$colSymbol=1692672;
+													$colSymbol=self::COLOR_GREEN;
 													$poe=$port[ 'poe' ]['standard'];
 												}else {
-													$colSymbol=16077123;
+													$colSymbol=self::COLOR_RED;
 													$poe=$port[ 'poe' ]['state'];
 												}
 												$this->MaintainVariable( 'Port_'.$port[ 'idx' ].'POE', $this->Translate( 'Port '.$port[ 'idx' ].'-POE' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'COLOR'=>$colSymbol,'ICON'=>'ethernet'], $vpos++, $this->ReadPropertyBoolean("PortsAnzeigen") );
