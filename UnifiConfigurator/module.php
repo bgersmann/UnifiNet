@@ -61,10 +61,10 @@ declare(strict_types=1);
 			#$arraySort = array( 'column' => 'Name', 'direction' => 'ascending' );
 
 			$arrayColumns = array();
-			$arrayColumns[] = array( 'caption' => 'Name', 'name' => 'Name', 'width' => '200px', 'add' => '' );
+			$arrayColumns[] = array( 'caption' => 'Name', 'name' => 'Name', 'width' => 'auto', 'add' => '' );
 			$arrayColumns[] = array( 'caption' => 'Typ', 'name' => 'Type', 'width' => '200px', 'add' => '' );
 			$arrayColumns[] = array( 'caption' => 'IP', 'name' => 'IP', 'width' => '200px', 'add' => '' );
-			$arrayColumns[] = array( 'caption' => 'ID', 'name' => 'ID', 'width' => '50px', 'add' => '' );
+			$arrayColumns[] = array( 'caption' => 'ID', 'name' => 'ID', 'width' => '300px', 'add' => '' );
 			$arrayValues = array();
 
 			$Bufferdata = $this->GetBuffer("configurator");

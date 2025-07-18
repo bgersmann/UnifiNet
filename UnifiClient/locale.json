@@ -7,7 +7,10 @@
             "Client IP":"Endgeräte IP",
             "Connected At":"Verbunden Seit",
             "Uplink Device":"Übergeordnetes Gerät",
-            "UniFi Client":"UniFi Endgerät"
+            "UniFi Client":"UniFi Endgerät",
+            "Show MAC":"MAC-Adresse anzeigen",
+            "Show ID":"ID anzeigen",
+            "Client MAC":"Endgeräte MAC"
         }
     }
 }

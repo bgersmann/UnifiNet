@@ -12,6 +12,10 @@ declare(strict_types=1);
 			$this->RegisterPropertyString( 'ID', '' );
         	$this->RegisterPropertyInteger( 'Timer', '0' );
         	$this->RegisterTimer( 'Collect Data', 0, "UNIFIDV_Send(\$_IPS['TARGET'],'getDeviceData','');" );
+			$this->RegisterPropertyBoolean("MACAnzeigen", 0);
+			$this->RegisterPropertyBoolean("IDAnzeigen", 0);
+			$this->RegisterPropertyBoolean("PortsAnzeigen", 0);
+			$this->RegisterPropertyBoolean("RadiosAnzeigen", 0);
 			$this->RegisterPropertyBoolean("Utilization", 0);
 		}
 
@@ -27,7 +31,7 @@ declare(strict_types=1);
 			parent::ApplyChanges();
 			$vpos = 100;
 			$this->MaintainVariable( 'DeviceName', $this->Translate( 'Device Name' ), 3, '', $vpos++, 1 );
-			$this->MaintainVariable( 'ID', $this->Translate( 'Device ID' ), 3, '', $vpos++, 1 );
+			$this->MaintainVariable( 'ID', $this->Translate( 'Device ID' ), 3, '', $vpos++, $this->ReadPropertyBoolean("IDAnzeigen") );
 			$this->MaintainVariable( 'DeviceModel', $this->Translate( 'Device Model' ), 3, '', $vpos++, 1 );
 			$this->MaintainVariable( 'DeviceIP', $this->Translate( 'Device IP' ), 3, '', $vpos++, 1 );
 			$this->MaintainVariable( 'Firmware', $this->Translate( 'Firmware' ), 3, '', $vpos++, 1 );
@@ -40,7 +44,7 @@ declare(strict_types=1);
 
 			$this->MaintainVariable( 'CPU', $this->Translate( 'CPU Utilization' ), 2, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'DIGITS'=> 2 , 'SUFFIX'=> ' %' , 'ICON'=> 'laptop-binary'], $vpos++, $this->ReadPropertyBoolean("Utilization") );
 			$this->MaintainVariable( 'Memory', $this->Translate( 'Memory Utilization' ), 2, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'DIGITS'=> 2 , 'SUFFIX'=> ' %' , 'ICON'=> 'laptop-binary'], $vpos++, $this->ReadPropertyBoolean("Utilization") );
-			
+			$this->MaintainVariable( 'MAC', $this->Translate( 'Device MAC' ), 3, '', $vpos++, $this->ReadPropertyBoolean("MACAnzeigen") );
 
 
 
@@ -53,6 +57,8 @@ declare(strict_types=1);
 			} else {
 				// instance active
 				$this->SetStatus( 102 );
+				$this->Send('getDeviceData','');
+				$this->Send('getDeviceStats','');
 			}
 		}
 
@@ -80,7 +86,6 @@ declare(strict_types=1);
 					case "getDeviceStats":
 						$JSONData = json_decode($data['data'],true);
 						if ( is_array( $JSONData ) && isset( $JSONData ) ) {
-							#var_dump( $JSONData );
 							$this->SetValue( 'UptimeSec', (( isset($JSONData[ 'uptimeSec' ]) ) ? $JSONData[ 'uptimeSec' ] : 0) );
 							$this->SetValue( 'UplinkTX', round( (( isset($JSONData[ 'uplink' ][ 'txRateBps' ]) ) ? $JSONData[ 'uplink' ][ 'txRateBps' ]/1000/1000 : 0),3 ) );
 							$this->SetValue( 'UplinkRX', round( (( isset($JSONData[ 'uplink' ][ 'rxRateBps' ]) ) ? $JSONData[ 'uplink' ][ 'rxRateBps' ]/1000/1000 : 0),3 ) );
@@ -97,12 +102,18 @@ declare(strict_types=1);
 								$this->SetValue( 'Online', false );
 							} else {
 								$this->SetValue( 'DeviceName', $JSONData[ 'name' ] );
-								$this->SetValue( 'ID', $JSONData[ 'id' ] );
+								if ($this->ReadPropertyBoolean("IDAnzeigen")) {
+									$this->SetValue( 'ID', $JSONData[ 'id' ] );
+								}								
 								$this->SetValue( 'DeviceModel', $JSONData[ 'model' ] );
 								$this->SetValue( 'DeviceIP', $JSONData[ 'ipAddress' ] );
 								$this->SetValue( 'Firmware', $JSONData[ 'firmwareVersion' ] );
 								$this->SetValue( 'FirmwareUpdate', $JSONData[ 'firmwareUpdatable' ] );
 								$this->SetValue( 'Online', ( $JSONData[ 'state' ] == 'ONLINE' ) ? true : false );
+								if ($this->ReadPropertyBoolean("MACAnzeigen")) {
+									$this->SetValue( 'MAC', $JSONData[ 'macAddress' ] );
+								}
+
 																
 								if ( isset( $JSONData['uplink']['deviceId'] ) ) {
 									$this->Send('getDeviceName',$JSONData['uplink']['deviceId']);	
@@ -117,7 +128,7 @@ declare(strict_types=1);
 										foreach ( $ports as $port ) {
 											if ($port[ 'state' ]== 'UP') {                                
 												if ($port[ 'speedMbps' ]<=100) {                                   
-												$colSymbol=16776960; //gelb
+													$colSymbol=16776960; //gelb
 												} else {
 													$colSymbol=1692672; //gruen
 												}                                
@@ -125,9 +136,9 @@ declare(strict_types=1);
 												$colSymbol=16077123; //rot
 											}
 
-											$this->MaintainVariable( 'Port_'.$port[ 'idx' ], $this->Translate( 'Port '.$port[ 'idx' ] ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'COLOR'=>$colSymbol,'ICON'=>'ethernet'], $vpos++, 1 );
+											$this->MaintainVariable( 'Port_'.$port[ 'idx' ], $this->Translate( 'Port '.$port[ 'idx' ].($port['connector']== 'RJ45' ? '' : '-'.$port['connector'])), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'COLOR'=>$colSymbol,'ICON'=>'ethernet'], $vpos++, $this->ReadPropertyBoolean("PortsAnzeigen") );
 											$PortText='';
-											if (isset($port[ 'speedMbps' ])) {
+											if (isset($port[ 'speedMbps' ]) && $port[ 'state' ]== 'UP') {
 												if ($port[ 'speedMbps' ]>=1000) {
 													$speed=($port[ 'speedMbps' ]/1000).'Gbit/s';                                
 												} else {
@@ -145,12 +156,17 @@ declare(strict_types=1);
 													$colSymbol=16077123;
 													$poe=$port[ 'poe' ]['state'];
 												}
-												$this->MaintainVariable( 'Port_'.$port[ 'idx' ].'POE', $this->Translate( 'Port '.$port[ 'idx' ].'-POE' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'COLOR'=>$colSymbol,'ICON'=>'ethernet'], $vpos++, 1 );
-												$this->SetValue( 'Port_'.$port[ 'idx' ].'POE', $poe);
+												$this->MaintainVariable( 'Port_'.$port[ 'idx' ].'POE', $this->Translate( 'Port '.$port[ 'idx' ].'-POE' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'COLOR'=>$colSymbol,'ICON'=>'ethernet'], $vpos++, $this->ReadPropertyBoolean("PortsAnzeigen") );
+												if ($this->ReadPropertyBoolean("PortsAnzeigen")) {
+													$this->SetValue( 'Port_'.$port[ 'idx' ].'POE', $poe);
+												}
 											} else {
 												$vpos++;
-											}                           
-											$this->SetValue( 'Port_'.$port[ 'idx' ], $speed);
+											}
+											if ($this->ReadPropertyBoolean("PortsAnzeigen")) {
+												$this->SetValue( 'Port_'.$port[ 'idx' ], $speed);
+											}
+											
 										}
 									}
 									if ( isset( $JSONData[ 'interfaces' ][ 'radios' ] ) ) {
@@ -166,8 +182,10 @@ declare(strict_types=1);
 												$colSymbol=16077123; //rot
 												$radioTxt=$radio[ 'wlanStandard'];
 											}
-											$this->MaintainVariable( 'Port_'.$vpos, $this->Translate( 'WLAN '.$radio[ 'frequencyGHz' ].'GHz'), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'COLOR'=>$colSymbol,'ICON'=>'wifi'], $vpos, 1 );
-											$this->SetValue( 'Port_'.$vpos, $radioTxt );
+											$this->MaintainVariable( 'Port_'.$vpos, $this->Translate( 'WLAN '.$radio[ 'frequencyGHz' ].'GHz'), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'COLOR'=>$colSymbol,'ICON'=>'wifi'], $vpos, $this->ReadPropertyBoolean("RadiosAnzeigen") );
+											if ($this->ReadPropertyBoolean("RadiosAnzeigen")) {
+												$this->SetValue( 'Port_'.$vpos, $radioTxt );
+											}											
 										}
 									}
 								}
@@ -202,6 +220,10 @@ declare(strict_types=1);
 				$arrayOptions=json_decode($Bufferdata);
 			}		
 			$arrayElements[] = array( 'type' => 'Select', 'name' => 'ID', 'caption' => 'Device ID', 'options' => $arrayOptions );
+			$arrayElements[] = array( 'type' => 'CheckBox', 'name' => 'PortsAnzeigen', 'caption' => $this->Translate('Show Ports') );
+			$arrayElements[] = array( 'type' => 'CheckBox', 'name' => 'RadiosAnzeigen', 'caption' => $this->Translate('Show Radios') );
+			$arrayElements[] = array( 'type' => 'CheckBox', 'name' => 'MACAnzeigen', 'caption' => $this->Translate('Show MAC') );
+			$arrayElements[] = array( 'type' => 'CheckBox', 'name' => 'IDAnzeigen', 'caption' => $this->Translate('Show ID') );
 			$arrayElements[] = array( 'type' => 'CheckBox', 'name' => 'Utilization', 'caption' => $this->Translate('Utilization Statistics auslesen (CPU + Memory)') );
 
 			$arrayActions = array();

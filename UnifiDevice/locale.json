@@ -10,7 +10,12 @@
             "Memory Utilization":"Arbeitsspeicher Auslastung",
             "UptimeSec":"Laufzeit",
             "Utilization Statistics auslesen (CPU + Memory)":"Auslastung auslesen (CPU+Arbeitsspeicher)",
-            "UniFi Device":"UniFi Gerät"
+            "UniFi Device":"UniFi Gerät",
+            "Device MAC":"Geräte MAC",
+            "Show MAC":"MAC-Adresse anzeigen",
+            "Show ID":"ID anzeigen",
+            "Show Ports":"Ports anzeigen",
+            "Show Radios":"Radios anzeigen"
         }
     }
 }
