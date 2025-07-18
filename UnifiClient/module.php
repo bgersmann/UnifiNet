@@ -84,6 +84,7 @@ class UnifiClient extends IPSModule
 								$this->SetValue( 'ClientType', $array[ 'type' ] );
 								if ( isset( $array[ 'ipAddress' ] ) ) {
 									$this->SetValue( 'ClientIP', $array[ 'ipAddress' ] );
+									$this->SetSummary($array[ 'ipAddress' ]);
 								}
 								$this->SetValue( 'ConnectedAt', strtotime( $array[ 'connectedAt' ] ) );
 								$this->SetValue( 'Online', true );

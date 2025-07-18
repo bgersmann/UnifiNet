@@ -110,6 +110,7 @@ declare(strict_types=1);
 								}								
 								$this->SetValue( 'DeviceModel', $JSONData[ 'model' ] );
 								$this->SetValue( 'DeviceIP', $JSONData[ 'ipAddress' ] );
+								$this->SetSummary($JSONData[ 'ipAddress' ]);
 								$this->SetValue( 'Firmware', $JSONData[ 'firmwareVersion' ] );
 								$this->SetValue( 'FirmwareUpdate', $JSONData[ 'firmwareUpdatable' ] );
 								$this->SetValue( 'Online', ( $JSONData[ 'state' ] == 'ONLINE' ) ? true : false );

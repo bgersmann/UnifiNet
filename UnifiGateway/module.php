@@ -33,7 +33,8 @@ class UnifiGateway extends IPSModule
 			$this->SetStatus( 104 );
 		} else {
 		    // instance active
-			$this->SetStatus( 102 );            
+			$this->SetStatus( 102 );
+             $this->SetSummary($this->ReadPropertyString("ServerAddress"));        
 		}
     }
 
