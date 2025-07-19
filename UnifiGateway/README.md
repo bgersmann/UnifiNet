@@ -32,9 +32,10 @@ __Konfigurationsseite__:
 
 Name     | Beschreibung
 -------- | ------------------
-Unifi Device IP      | IP Adresse des Gateways mit dem UNA Controller
-APIKey               | API Key bitte unter "UniFi Network > Settings > Control Plane > Integrations" erzeugen
-Site                 | Nach übernehmen der IP + ApiKey kann die gewünschte Site ausgewählt werden
+Unifi Device IP      | IP Adresse des Gateways mit dem UNA Controller.
+APIKey               | API Key bitte unter "UniFi Network > Settings > Control Plane > Integrations" erzeugen.
+Site                 | Nach übernehmen der IP + ApiKey kann die gewünschte Site ausgewählt werden.
+Show Application Version | Erzeugt eine Variable mit der aktuellen UNA Version.
 ### 5. Statusvariablen und Profile
 
 Die Statusvariablen/Kategorien werden automatisch angelegt. Das Löschen einzelner kann zu Fehlfunktionen führen.

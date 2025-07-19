@@ -32,7 +32,7 @@ __Konfigurationsseite__:
 
 Name     | Beschreibung
 -------- | ------------------
-Unifi Devices | Zeigt alle Unifi Geräte und Clients an
+Unifi Devices | Zeigt alle Unifi Geräte und Clients an.
 
 ### 5. Statusvariablen und Profile
 

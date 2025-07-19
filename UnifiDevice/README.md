@@ -32,9 +32,13 @@ __Konfigurationsseite__:
 
 Name     | Beschreibung
 -------- | ------------------
-Timer    | Timer des Abfrageintervalls. 0 = Deaktiviert
-Device-ID| Bitte das Gerät aus der Liste wählen. 
-
+Timer    | Timer des Abfrageintervalls. 0 = Deaktiviert.
+Device-ID | Bitte das Gerät aus der Liste wählen. 
+Ports anzeigen | Erzeugt Variablen für alle verfügbaren Ports des Geräts.
+Radios anzeigen | Erzeugt Variablen für die verfügbaren Wlan-Radios.
+Mac-Adresse anzeigen | Erzeugt eine Variable mit der MAC Adresse des Endgerätes.
+ID anzeigen | Erzeugt eine Variable mit der uuid des Clients.
+Auslastung auslesen | Erzeugt Variablen für die CPU Auslastung und den Speicher Verbrauch.
 ### 5. Statusvariablen und Profile
 
 Die Statusvariablen/Kategorien werden automatisch angelegt. Das Löschen einzelner kann zu Fehlfunktionen führen.

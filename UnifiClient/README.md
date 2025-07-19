@@ -33,7 +33,10 @@ __Konfigurationsseite__:
 Name     | Beschreibung
 -------- | ------------------
 Timer    | Timer des Abfrageintervalls. 0 = Deaktiviert
-Client-ID| Bitte das Client aus der Liste wählen. 
+Client-ID | Bitte das Client aus der Liste wählen. 
+Mac-Adresse anzeigen | Erzeugt eine Variable mit der MAC Adresse des Endgerätes.
+ID anzeigen| Erzeugt eine Variable mit der uuid des Clients.
+
 
 ### 5. Statusvariablen und Profile
 
