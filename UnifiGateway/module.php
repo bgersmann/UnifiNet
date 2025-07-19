@@ -34,7 +34,7 @@ class UnifiGateway extends IPSModule
 		} else {
 		    // instance active
 			$this->SetStatus( 102 );
-             $this->SetSummary($this->ReadPropertyString("ServerAddress"));        
+            $this->SetSummary($this->ReadPropertyString("ServerAddress"));        
 		}
     }
 
@@ -102,7 +102,7 @@ class UnifiGateway extends IPSModule
         $ServerAddress = $this->ReadPropertyString( 'ServerAddress' );
         $APIKey = $this->ReadPropertyString( 'APIKey' );
         $site = $this->ReadPropertyString( 'Site' );
-        if ( !empty( $APIKey ) ) {
+        if ( !empty( $APIKey ) && $this->GetStatus() === 102 ) {
             $arrayOptions = $this->getSites();
         } else {
             $arrayOptions[] = array( 'caption' => 'default', 'value' => 'default' );
@@ -130,7 +130,7 @@ class UnifiGateway extends IPSModule
         $arrayElements[] = array( 'type' => 'CheckBox', 'name' => 'applicationVersion', 'caption' => $this->Translate('Show Application Version') );
         $arrayElements[] = array( 'type' => 'Select', 'name' => 'Site', 'caption' => 'Site', 'options' => $arrayOptions );
 
-        if ( !empty( $APIKey )) {
+        if ( !empty( $APIKey && $this->GetStatus() === 102)) {
             if ($this->ReadPropertyBoolean("applicationVersion")) {
                  $this->SetValue('applicationVersion', $this->getNetworkVersion());
             }
