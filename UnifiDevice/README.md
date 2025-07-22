@@ -60,4 +60,5 @@ Keine vorhanden
 
 ### 7. PHP-Befehlsreferenz
 
-Keine vorhanden
+UNIFIDV_PowerCycle($ID,$INT); -> Führt ein Power Cycle auf dem Ausgewählten POE Port aus
+UNIFIDV_RestartDevice($ID); -> Führt ein Restart vom Unifi Gerät aus

@@ -81,10 +81,20 @@ class UnifiGateway extends IPSModule
                     $this->SendDebug("UnifiGW", json_encode($data), 0);
                     if (isset($data->Param1)){
                         $jsonString = $this->getDeviceName($data->Param1);
-
                         $this->send($data->InstanceID,$data->Api,$jsonString);
                     }                   
                     break;
+                case "setPortCycle":
+                    if (isset($data->Param1)){
+                        $jsonString = $this->setPortCycle(IPS_GetProperty( $data->InstanceID, 'ID' ),intval($data->Param1));
+                        $this->send($data->InstanceID,$data->Api,"");
+                    } 
+                    break;
+                case "setRestartDevice":
+                    $jsonString = $this->setRestartDevice(IPS_GetProperty( $data->InstanceID, 'ID' ));
+                    $this->send($data->InstanceID,$data->Api,"");
+                    break;
+
 			}
 			
 		}
@@ -123,7 +133,7 @@ class UnifiGateway extends IPSModule
         #$arraySort = array( 'column' => 'DeviceName', 'direction' => 'ascending' );
 
         $arrayElements = array();
-        $arrayElements[] = array( 'type' => 'Label', 'label' => 'UniFi Device Configurator' );
+        $arrayElements[] = array( 'type' => 'Label', 'label' => $this->Translate('UniFi Device Gateway'));
         $arrayElements[] = array( 'type' => 'Label', 'label' => 'Bitte API Key unter "UniFi Network > Settings > Control Plane > Integrations" erzeugen');
         $arrayElements[] = array( 'type' => 'ValidationTextBox', 'name' => 'ServerAddress', 'caption' => 'Unifi Device IP', 'validate' => "^(([a-zA-Z0-9\\.\\-\\_]+(\\.[a-zA-Z]{2,3})+)|(\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b))$" );
         $arrayElements[] = array( 'type' => 'ValidationTextBox', 'name' => 'APIKey', 'caption' => 'APIKey' );
@@ -134,9 +144,9 @@ class UnifiGateway extends IPSModule
             if ($this->ReadPropertyBoolean("applicationVersion")) {
                  $this->SetValue('applicationVersion', $this->getNetworkVersion());
             }
-            $arrayElements[] = array( 'type' => 'Label', 'label' => 'Network Application Version: '.$this->getNetworkVersion() );           
+            $arrayElements[] = array( 'type' => 'Label', 'label' => $this->Translate('Network Application Version: ').$this->getNetworkVersion() );           
         } else {
-            $arrayElements[] = array( 'type' => 'Label', 'label' => 'Network Application Version: not found' );
+            $arrayElements[] = array( 'type' => 'Label', 'label' => $this->Translate('Network Application Version: not found') );
         }
         $arrayActions = array();
 
@@ -165,14 +175,52 @@ class UnifiGateway extends IPSModule
             return [];
         }
         $JSONData = json_decode( $RawData, true );
-        if ( isset( $array[ 'statusCode' ] ) ) {
-            if ($array[ 'statusCode' ]<> 200) {
+        if ( isset( $JSONData[ 'statusCode' ] ) ) {
+            if ($JSONData[ 'statusCode' ]<> 200) {
                 // instance inactive
-			    $this->SetStatus( $array[ 'statusCode' ] );
+			    $this->SetStatus( $JSONData[ 'statusCode' ] );
             }        
         }
         return $JSONData;
     }
+    public function getApiDataPost( string $endpoint = '', string $PostData = '' ):array {
+			$ServerAddress = $this->ReadPropertyString( 'ServerAddress' );
+            $APIKey = $this->ReadPropertyString( 'APIKey' );
+			if ($APIKey == '') {
+				$this->SendDebug("UnifiSiteApi", "API Key is empty", 0);
+				$this->SetStatus( 201 ); // Set status to error
+				return [];
+			}
+
+			$ch = curl_init();
+            curl_setopt( $ch, CURLOPT_URL, 'https://'.$ServerAddress.'/proxy/network/integrations/v1/sites'.$endpoint );
+			curl_setopt( $ch, CURLOPT_POST, true );
+			curl_setopt( $ch, CURLOPT_POSTFIELDS, $PostData );
+			curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+			curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, false );
+			curl_setopt( $ch, CURLOPT_SSL_VERIFYHOST, false );
+			curl_setopt( $ch, CURLOPT_HTTPHEADER, array( 'X-API-KEY:'.$APIKey, 'Content-Type: application/json' ));
+			curl_setopt( $ch, CURLOPT_SSLVERSION, 'CURL_SSLVERSION_TLSv1' );
+			$RawData = curl_exec( $ch );
+			curl_close( $ch );
+			if ($RawData === false) {
+				// Handle error
+				$this->SendDebug("UnifiGW", "Curl error: " . curl_error($ch), 0);
+				$this->SetStatus( 201 ); // Set status to error
+				return [];
+			}
+			$JSONData = json_decode( $RawData, true );
+			if ( isset( $JSONData[ 'statusCode' ] ) ) {
+				if ($JSONData[ 'statusCode' ]<> 200) {
+					// instance inactive
+                    $this->SendDebug("UnifiGW", "Curl error: " . json_encode($JSONData), 0);
+					#$this->SetStatus( $JSONData['statusCode']);
+					return [];
+				}        
+			}
+			$this->SendDebug("UnifiGW", "GetApiDataPost: " . $RawData, 0);
+			return [];
+		}
 
     public function getSites():array {
         $JSONData = $this->getApiData();       
@@ -289,6 +337,30 @@ class UnifiGateway extends IPSModule
             }            
             return $value;
         }
+    }
+
+    public function setPortCycle(string $deviceID, int $port):string {
+        $site = $this->ReadPropertyString( 'Site' );
+        $siteID = $this->getSiteID( $site );
+        $PostData = json_encode([
+            'action' => 'POWER_CYCLE'
+               ]);
+        $this->SendDebug("UnifiGW", "setPortCycle: " . $PostData, 0);
+        $this->SendDebug("UnifiGW", "setPortCycle: " . '/'.$siteID.'/devices/'.$deviceID.'/interfaces/ports/'.$port.'/actions', 0);
+        $JSONData=$this->getApiDataPost( '/'.$siteID.'/devices/'.$deviceID.'/interfaces/ports/'.$port.'/actions', $PostData );
+        return json_encode($JSONData);
+    }
+
+    public function setRestartDevice(string $deviceID):string {
+        $site = $this->ReadPropertyString( 'Site' );
+        $siteID = $this->getSiteID( $site );
+        $PostData = json_encode([
+            'action' => 'RESTART'
+               ]);
+        $this->SendDebug("UnifiGW", "setRestartDevice: " . $PostData, 0);
+        $this->SendDebug("UnifiGW", "setRestartDevice: " . '/'.$siteID.'/devices/'.$deviceID.'/actions', 0);
+        $JSONData=$this->getApiDataPost( '/'.$siteID.'/devices/'.$deviceID.'/actions', $PostData );
+        return json_encode($JSONData);
     }
 
      public function getClientData(string $clientID) {

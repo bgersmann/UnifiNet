@@ -74,8 +74,8 @@ declare(strict_types=1);
 				$arrayValues=json_decode($Bufferdata);
 			}
 			$arrayElements = array();
-			$arrayElements[] = array( 'type' => 'Label', 'label' => 'UniFi Device Configurator' );
-			$arrayElements[] = array( 'type' => 'Configurator', 'name' => 'UnifiDevices', 'caption' => 'Unifi Devices', 'rowCount' => 10, 'delete' => false, 'sort' => $arraySort, 'columns' => $arrayColumns, 'values' => $arrayValues );
+			$arrayElements[] = array( 'type' => 'Label', 'label' => $this->Translate('UniFi Device Configurator'));
+			$arrayElements[] = array( 'type' => 'Configurator', 'name' => $this->Translate('UnifiDevices'), 'caption' => 'Unifi Devices', 'rowCount' => 10, 'delete' => false, 'sort' => $arraySort, 'columns' => $arrayColumns, 'values' => $arrayValues );
 
 			$arrayActions = array();
 			$arrayActions[] = array( 'type' => 'Button', 'label' => 'Geräte auslesen', 'onClick' => 'UNIFICG_Send($id,"getDevicesConfig");');

@@ -1,7 +1,12 @@
 {
     "translations": {
         "de": {
-            "Application Version": "Anwendungsversion"
+            "Application Version": "Anwendungsversion",
+            "UniFi Device Gateway": "UniFi Gateway",
+            "Network Application Version:": "Netzwerkanwendungsversion:",
+            "Network Application Version: not found": "Netzwerkanwendungsversion: nicht gefunden",
+            "Show Application Version": "Anwendungsversion anzeigen"
+
         }
     }
 }

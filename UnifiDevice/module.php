@@ -202,8 +202,30 @@ declare(strict_types=1);
 						$this->SendDebug('UnifiDV', $data['data'], 0);
 						$this->SetValue( 'UplinkDevice', $data['data']);
 						break;
+					case "setPortCycle":
+						$this->SendDebug('UnifiDV', 'PortyCycle: '.$data['data'], 0);
+						echo($data['data']);
+						break;
+					case "setRestartDevice":
+						$this->SendDebug('UnifiDV', 'RestartDevice: '.$data['data'], 0);
+						echo($data['data']);
+						break;
 				}
 			}			
+		}
+
+		public function PowerCycle(int $port)
+		{
+			if ($this->HasActiveParent()) {
+				$this->Send('setPortCycle',strval($port));			
+			}
+		}
+
+		public function RestartDevice()
+		{
+			if ($this->HasActiveParent()) {
+				$this->Send('setRestartDevice');			
+			}
 		}
 
 		public function GetConfigurationForm(){       
@@ -235,6 +257,7 @@ declare(strict_types=1);
 			$arrayActions[] = array( 'type' => 'Button', 'label' => 'Devices Holen', 'onClick' => 'UNIFIDV_Send($id,"getDevices","");' );
 			$arrayActions[] = array( 'type' => 'Button', 'label' => 'Daten Holen', 'onClick' => 'UNIFIDV_Send($id,"getDeviceData","");' );
 			$arrayActions[] = array( 'type' => 'Button', 'label' => 'Stats Holen', 'onClick' => 'UNIFIDV_Send($id,"getDeviceStats","");' );
+			$arrayActions[] = array( 'type' => 'Button', 'label' => 'Neustart', 'onClick' => 'UNIFIDV_Send($id,"setRestartDevice","");' );
 
 			return JSON_encode( array( 'status' => $arrayStatus, 'elements' => $arrayElements, 'actions' => $arrayActions ) );
 	    }
