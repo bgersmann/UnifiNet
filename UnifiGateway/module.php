@@ -326,7 +326,7 @@ class UnifiGateway extends IPSModule
                 foreach ( $clients as $client ) {
                     $value[] = [
                         'caption'=>$client[ 'name' ],
-                        'value'=> $client[ 'id' ]
+                        'value'=> isset( $client[ 'id' ] ) ? $client[ 'id' ] : 'missing'
                     ];
                 }
             } else {
@@ -385,7 +385,7 @@ class UnifiGateway extends IPSModule
                 foreach ( $devices as $device ) {
                     $value[] = [
                         'caption'=>$device[ 'name' ],
-                        'value'=> $device[ 'id' ]
+                        'value'=> isset( $device[ 'id' ] ) ? $device[ 'id' ] : 'missing'
                     ];
                 }
             } else {
