@@ -117,10 +117,8 @@ declare(strict_types=1);
 								if ($this->ReadPropertyBoolean("MACAnzeigen")) {
 									$this->SetValue( 'MAC', $JSONData[ 'macAddress' ] );
 								}
-
-																
-								if ( isset( $JSONData['uplink']['deviceId'] ) ) {
-									$this->Send('getDeviceName',$JSONData['uplink']['deviceId']);	
+								if ( isset( $JSONData['uplink']['deviceId'] ) ) {									
+									$this->Send('getDeviceName',$JSONData['uplink']['deviceId']);
 								}
 								if ( isset( $JSONData[ 'interfaces' ] ) ) {
 									if ( isset( $JSONData[ 'interfaces' ][ 'ports' ] ) ) {

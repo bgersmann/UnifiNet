@@ -176,7 +176,7 @@ class UnifiGateway extends IPSModule
         }
         $JSONData = json_decode( $RawData, true );
         if ( isset( $JSONData[ 'statusCode' ] ) ) {
-            if ($JSONData[ 'statusCode' ]<> 200) {
+            if ($JSONData[ 'statusCode' ]<> 200 && $JSONData[ 'statusCode' ]<> 404) {
                 // instance inactive
 			    $this->SetStatus( $JSONData[ 'statusCode' ] );
             }        
@@ -413,6 +413,7 @@ class UnifiGateway extends IPSModule
         }
 
      public function getDeviceName(string $deviceID):string {
+            $this->SendDebug("UnifiGW", "getDeviceName: " . $deviceID, 0);
             $site = $this->ReadPropertyString( 'Site' );
             $siteID = $this->getSiteID( $site );        
             $JSONData = $this->getApiData( '/'.$siteID.'/devices/'.$deviceID );

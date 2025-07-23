@@ -73,6 +73,16 @@ class UnifiClient extends IPSModule
 						break;
 					case "getClientData":
 						$array = json_decode($data['data'],true);
+						if ( isset( $array[ 'statusCode' ] ) ) {
+							if ($array[ 'statusCode' ]== 404) {
+								// instance inactive
+								$this->SendDebug("UnifiCL", "Device Offline: " . json_encode($array), 0);
+								$this->SetValue( 'Online', false );
+								$this->SetValue( 'UplinkDevice', '-');
+							}
+						}	
+			
+						$this->SendDebug("UnifiCL", $data['data'], 0);
 						if ( is_array( $array ) && isset( $array ) ) {
 							if ( isset( $array[ 'statusCode' ] ) ) {
 								$this->SetValue( 'Online', false );
@@ -89,7 +99,7 @@ class UnifiClient extends IPSModule
 								$this->SetValue( 'ConnectedAt', strtotime( $array[ 'connectedAt' ] ) );
 								$this->SetValue( 'Online', true );
 								if ( isset( $array['uplinkDeviceId'] ) ) {
-									$this->Send('getDeviceName',$array['uplinkDeviceId']);									
+									$this->Send('getDeviceName',$array['uplinkDeviceId']);
 								}
 								if ($this->ReadPropertyBoolean("MACAnzeigen")) {
 									$this->SetValue( 'MAC', $array[ 'macAddress' ] );
