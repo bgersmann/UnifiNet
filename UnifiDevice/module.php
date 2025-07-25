@@ -234,7 +234,8 @@ declare(strict_types=1);
 			$arrayStatus[] = array( 'code' => 102, 'icon' => 'active', 'caption' => 'Instanz ist aktiv' );
 
 			$arrayElements = array();
-			$arrayElements[] = array( 'type' => 'Label', 'label' => $this->Translate('UniFi Device')); 
+			$arrayElements[] = array( 'type' => 'Label', 'bold' => true, 'label' => $this->Translate('UniFi Device'));
+			$arrayElements[] = array( 'type' => 'Label', 'label' => $this->Translate('Set Timer to activate instance. The instance will then automatically collect data from the device at the specified interval.')); 
 			$arrayElements[] = array( 'type' => 'NumberSpinner', 'name' => 'Timer', 'caption' => 'Timer (s) -> 0=Off' );
 
 			$Bufferdata = $this->GetBuffer("devices");
@@ -242,21 +243,27 @@ declare(strict_types=1);
 				$arrayOptions[] = array( 'caption' => 'Test', 'value' => '' );
 			} else {
 				$arrayOptions=json_decode($Bufferdata);
-			}		
+			}
 			$arrayElements[] = array( 'type' => 'Select', 'name' => 'ID', 'caption' => 'Device ID', 'options' => $arrayOptions );
-			$arrayElements[] = array( 'type' => 'CheckBox', 'name' => 'PortsAnzeigen', 'caption' => $this->Translate('Show Ports') );
-			$arrayElements[] = array( 'type' => 'CheckBox', 'name' => 'RadiosAnzeigen', 'caption' => $this->Translate('Show Radios') );
-			$arrayElements[] = array( 'type' => 'CheckBox', 'name' => 'MACAnzeigen', 'caption' => $this->Translate('Show MAC') );
-			$arrayElements[] = array( 'type' => 'CheckBox', 'name' => 'IDAnzeigen', 'caption' => $this->Translate('Show ID') );
+			unset($arrayOptions);
+			$arrayOptions[] = array( 'type' => 'CheckBox', 'name' => 'PortsAnzeigen', 'width' => '220px', 'caption' => $this->Translate('Show Ports') );
+			$arrayOptions[] = array( 'type' => 'CheckBox', 'name' => 'RadiosAnzeigen', 'width' => '220px', 'caption' => $this->Translate('Show Radios') );
+			$arrayElements[] = array( 'type' => 'RowLayout',  'items' => $arrayOptions );
+			unset($arrayOptions);
+			$arrayOptions[] = array( 'type' => 'CheckBox', 'name' => 'MACAnzeigen','width' => '220px', 'caption' => $this->Translate('Show MAC') );
+			$arrayOptions[] = array( 'type' => 'CheckBox', 'name' => 'IDAnzeigen', 'width' => '220px','caption' => $this->Translate('Show ID') );
+			$arrayElements[] = array( 'type' => 'RowLayout',  'items' => $arrayOptions );
 			$arrayElements[] = array( 'type' => 'CheckBox', 'name' => 'Utilization', 'caption' => $this->Translate('Utilization Statistics auslesen (CPU + Memory)') );
 
 			$arrayActions = array();
-
-			$arrayActions[] = array( 'type' => 'Button', 'label' => 'Devices Holen', 'onClick' => 'UNIFIDV_Send($id,"getDevices","");' );
-			$arrayActions[] = array( 'type' => 'Button', 'label' => 'Daten Holen', 'onClick' => 'UNIFIDV_Send($id,"getDeviceData","");' );
-			$arrayActions[] = array( 'type' => 'Button', 'label' => 'Stats Holen', 'onClick' => 'UNIFIDV_Send($id,"getDeviceStats","");' );
-			$arrayActions[] = array( 'type' => 'Button', 'label' => 'Neustart', 'onClick' => 'UNIFIDV_Send($id,"setRestartDevice","");' );
-
+			unset($arrayOptions);
+			$arrayOptions[] = array( 'type' => 'Button', 'label' => $this->Translate('Get Devices'),'width' => '220px', 'onClick' => 'UNIFIDV_Send($id,"getDevices","");' );
+			$arrayOptions[] = array( 'type' => 'Button', 'label' => $this->Translate('Get Data'), 'width' => '220px','onClick' => 'UNIFIDV_Send($id,"getDeviceData","");' );
+			$arrayActions[] = array( 'type' => 'RowLayout',  'items' => $arrayOptions );
+			unset($arrayOptions);
+			$arrayOptions[] = array( 'type' => 'Button', 'label' => $this->Translate('Get Statistics Data'),'width' => '220px', 'onClick' => 'UNIFIDV_Send($id,"getDeviceStats","");' );
+			$arrayOptions[] = array( 'type' => 'Button', 'label' => $this->Translate('Restart'), 'width' => '220px','onClick' => 'UNIFIDV_Send($id,"setRestartDevice","");' );
+			$arrayActions[] = array( 'type' => 'RowLayout',  'items' => $arrayOptions );
 			return JSON_encode( array( 'status' => $arrayStatus, 'elements' => $arrayElements, 'actions' => $arrayActions ) );
 	    }
 	}

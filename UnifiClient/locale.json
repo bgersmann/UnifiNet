@@ -10,7 +10,11 @@
             "UniFi Client":"UniFi Endgerät",
             "Show MAC":"MAC-Adresse anzeigen",
             "Show ID":"ID anzeigen",
-            "Client MAC":"Endgeräte MAC"
+            "Client MAC":"Endgeräte MAC",
+            "Set Timer to activate instance. The instance will then automatically collect data from the device at the specified interval.":"Timer einstellen, um die Instanz zu aktivieren. Die Instanz sammelt dann automatisch Daten vom Gerät im festgelegten Intervall.",
+            "Get Clients":"Endgeräte abrufen",
+            "Get Data":"Daten abrufen"
+        
         }
     }
 }

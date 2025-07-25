@@ -15,7 +15,12 @@
             "Show MAC":"MAC-Adresse anzeigen",
             "Show ID":"ID anzeigen",
             "Show Ports":"Ports anzeigen",
-            "Show Radios":"Radios anzeigen"
+            "Show Radios":"Radios anzeigen",
+            "Set Timer to activate instance. The instance will then automatically collect data from the device at the specified interval.":"Timer einstellen, um die Instanz zu aktivieren. Die Instanz sammelt dann automatisch Daten vom Gerät im festgelegten Intervall.",
+            "Get Devices":"Geräte abrufen",
+            "Get Data":"Daten abrufen",
+            "Get Statistics Data":"Statistik Daten abrufen",
+            "Restart":"Neustart"
         }
     }
 }

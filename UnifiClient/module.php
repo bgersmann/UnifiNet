@@ -123,23 +123,28 @@ class UnifiClient extends IPSModule
 			$arrayStatus[] = array( 'code' => 102, 'icon' => 'active', 'caption' => 'Instanz ist aktiv' );
 
 			$arrayElements = array();
-			$arrayElements[] = array( 'type' => 'Label', 'label' => $this->Translate('UniFi Client') );
+			$arrayElements[] = array( 'type' => 'Label', 'bold' => true, 'label' => $this->Translate('UniFi Client') );
+			$arrayElements[] = array( 'type' => 'Label', 'label' => $this->Translate('Set Timer to activate instance. The instance will then automatically collect data from the device at the specified interval.')); 
+			
 			$arrayElements[] = array( 'type' => 'NumberSpinner', 'name' => 'Timer', 'caption' => 'Timer (s) -> 0=Off' );
 			$Bufferdata = $this->GetBuffer("clients");
 			if ($Bufferdata=="") {
 				$arrayOptions[] = array( 'caption' => 'Test', 'value' => '' );
 			} else {
 				$arrayOptions=json_decode($Bufferdata);
-			}		
+			}
 			$arrayElements[] = array( 'type' => 'Select', 'name' => 'ID', 'caption' => 'Client ID', 'options' => $arrayOptions );
-			$arrayElements[] = array( 'type' => 'CheckBox', 'name' => 'MACAnzeigen', 'caption' => $this->Translate('Show MAC') );
-			$arrayElements[] = array( 'type' => 'CheckBox', 'name' => 'IDAnzeigen', 'caption' => $this->Translate('Show ID') );
+			unset($arrayOptions);
+			$arrayOptions[] = array( 'type' => 'CheckBox', 'name' => 'MACAnzeigen', 'caption' => $this->Translate('Show MAC') );
+			$arrayOptions[] = array( 'type' => 'CheckBox', 'name' => 'IDAnzeigen', 'caption' => $this->Translate('Show ID') );
+			$arrayElements[] = array( 'type' => 'RowLayout',  'items' => $arrayOptions );
 			
 
 			$arrayActions = array();
-			$arrayActions[] = array( 'type' => 'Button', 'label' => 'Clients auslesen', 'onClick' => 'UNIFICL_Send($id,"getClients","");' );
-			$arrayActions[] = array( 'type' => 'Button', 'label' => 'Daten auslesen', 'onClick' => 'UNIFICL_Send($id,"getClientData","");' );
-		
+			unset($arrayOptions);
+			$arrayOptions[] = array( 'type' => 'Button', 'width' => '220px','label' => 'Clients auslesen', 'onClick' => 'UNIFICL_Send($id,"getClients","");' );
+			$arrayOptions[] = array( 'type' => 'Button', 'width' => '220px','label' => 'Daten auslesen', 'onClick' => 'UNIFICL_Send($id,"getClientData","");' );
+			$arrayActions[] = array( 'type' => 'RowLayout',  'items' => $arrayOptions );
 			return JSON_encode( array( 'status' => $arrayStatus, 'elements' => $arrayElements, 'actions' => $arrayActions ) );
 			
     	}
