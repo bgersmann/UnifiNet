@@ -142,8 +142,8 @@ class UnifiClient extends IPSModule
 
 			$arrayActions = array();
 			unset($arrayOptions);
-			$arrayOptions[] = array( 'type' => 'Button', 'width' => '220px','label' => 'Clients auslesen', 'onClick' => 'UNIFICL_Send($id,"getClients","");' );
-			$arrayOptions[] = array( 'type' => 'Button', 'width' => '220px','label' => 'Daten auslesen', 'onClick' => 'UNIFICL_Send($id,"getClientData","");' );
+			$arrayOptions[] = array( 'type' => 'Button', 'width' => '220px','label' => $this->Translate('Get Clients'), 'onClick' => 'UNIFICL_Send($id,"getClients","");' );
+			$arrayOptions[] = array( 'type' => 'Button', 'width' => '220px','label' => $this->Translate('Get Data'), 'onClick' => 'UNIFICL_Send($id,"getClientData","");' );
 			$arrayActions[] = array( 'type' => 'RowLayout',  'items' => $arrayOptions );
 			return JSON_encode( array( 'status' => $arrayStatus, 'elements' => $arrayElements, 'actions' => $arrayActions ) );
 			
