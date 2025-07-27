@@ -214,7 +214,6 @@ class UnifiGateway extends IPSModule
 				if ($JSONData[ 'statusCode' ]<> 200) {
 					// instance inactive
                     $this->SendDebug("UnifiGW", "Curl error: " . json_encode($JSONData), 0);
-					#$this->SetStatus( $JSONData['statusCode']);
 					return [];
 				}        
 			}
