@@ -28,14 +28,14 @@ class UnifiClient extends IPSModule
 			//Never delete this line!
 			parent::ApplyChanges();
 			$vpos = 100;
-			$this->MaintainVariable( 'ClientName', $this->Translate( 'Client Name' ), 3, '', $vpos++, 1 );
-			$this->MaintainVariable( 'ID', $this->Translate( 'Client ID' ), 3, '', $vpos++, $this->ReadPropertyBoolean("IDAnzeigen") );
-			$this->MaintainVariable( 'ClientType', $this->Translate( 'Client Type' ), 3, '', $vpos++, 1 );
-			$this->MaintainVariable( 'ClientIP', $this->Translate( 'Client IP' ), 3, '', $vpos++, 1 );
-			$this->MaintainVariable( 'ConnectedAt', $this->Translate( 'Connected At' ), 1, [ 'PRESENTATION' => VARIABLE_PRESENTATION_DATE_TIME ], $vpos++, 1 );
+			$this->MaintainVariable( 'ClientName', $this->Translate( 'Client Name' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, 1 );
+			$this->MaintainVariable( 'ID', $this->Translate( 'Client ID' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, $this->ReadPropertyBoolean("IDAnzeigen") );
+			$this->MaintainVariable( 'ClientType', $this->Translate( 'Client Type' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, 1 );
+			$this->MaintainVariable( 'ClientIP', $this->Translate( 'Client IP' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, 1 );
+			$this->MaintainVariable( 'ConnectedAt', $this->Translate( 'Connected At' ), 1, [ 'PRESENTATION' => VARIABLE_PRESENTATION_DATE_TIME ,'ICON'=> 'circle-info'], $vpos++, 1 );
 			$this->MaintainVariable( 'Online', $this->Translate( 'Online' ), 0, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON'=> 'network-wired','OPTIONS'=>'[{"ColorDisplay":16077123,"Value":false,"Caption":"Offline","IconValue":"","IconActive":false,"ColorActive":true,"ColorValue":16077123,"Color":-1},{"ColorDisplay":1692672,"Value":true,"Caption":"Online","IconValue":"","IconActive":false,"ColorActive":true,"ColorValue":1692672,"Color":-1}]'], $vpos++, 1 );
-			$this->MaintainVariable( 'UplinkDevice', $this->Translate( 'Uplink Device' ), 3, '', $vpos++, 1 );
-			$this->MaintainVariable( 'MAC', $this->Translate( 'Client MAC' ), 3, '', $vpos++, $this->ReadPropertyBoolean("MACAnzeigen") );
+			$this->MaintainVariable( 'UplinkDevice', $this->Translate( 'Uplink Device' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, 1 );
+			$this->MaintainVariable( 'MAC', $this->Translate( 'Client MAC' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, $this->ReadPropertyBoolean("MACAnzeigen") );
 			$TimerMS = $this->ReadPropertyInteger( 'Timer' ) * 1000;
 			$this->SetTimerInterval( 'Collect Data', $TimerMS );
 			if ( 0 == $TimerMS )

@@ -26,7 +26,7 @@ class UnifiGateway extends IPSModule
         parent::ApplyChanges();
         $vpos = 100;
         $APIKey = $this->ReadPropertyString( 'APIKey' );
-        $this->MaintainVariable( 'applicationVersion', $this->Translate( 'Application Version' ), 3, '', $vpos++, $this->ReadPropertyBoolean("applicationVersion") );
+        $this->MaintainVariable( 'applicationVersion', $this->Translate( 'Application Version' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, $this->ReadPropertyBoolean("applicationVersion") );
         if (empty($APIKey))
 		{
 		    // instance inactive

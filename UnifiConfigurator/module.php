@@ -39,6 +39,7 @@ declare(strict_types=1);
 				//IPS_LogMessage('UNIFICL-'.$this->InstanceID,utf8_decode($data['data']));
 				switch($data['Api']) {
 					case "getDevicesConfig":
+						$this->SendDebug("UNIFICG", "getDevicesConfig: " . json_encode( $data['data']), 0);
 						$this->UpdateFormField("UnifiDevices", "values", $data['data']);
 						$this->SetBuffer("configurator", $data['data']);					
 						break;
