@@ -133,7 +133,7 @@ class UnifiGateway extends IPSModule
         #$arraySort = array( 'column' => 'DeviceName', 'direction' => 'ascending' );
 
         $arrayElements = array();
-        $arrayElements[] = array( 'type' => 'Label', 'label' => $this->Translate('UniFi Device Gateway'));
+        $arrayElements[] = array( 'type' => 'Label','bold' => true, 'label' => $this->Translate('UniFi Device Gateway'));
         $arrayElements[] = array( 'type' => 'Label', 'label' => 'Bitte API Key unter "UniFi Network > Settings > Control Plane > Integrations" erzeugen');
         $arrayElements[] = array( 'type' => 'ValidationTextBox', 'name' => 'ServerAddress', 'caption' => 'Unifi Device IP', 'validate' => "^(([a-zA-Z0-9\\.\\-\\_]+(\\.[a-zA-Z]{2,3})+)|(\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b))$" );
         $arrayElements[] = array( 'type' => 'ValidationTextBox', 'name' => 'APIKey', 'caption' => 'APIKey' );
