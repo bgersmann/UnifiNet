@@ -76,27 +76,25 @@ declare(strict_types=1);
 		public function Send(string $api, string $param1)
 		{
 			if ($this->HasActiveParent()) {
-				$this->SendDataToParent(json_encode(['DataID' => '{4A5538F1-1C38-198A-3144-D806E0DADF87}',
+				$data=$this->SendDataToParent(json_encode(['DataID' => '{4A5538F1-1C38-198A-3144-D806E0DADF87}',
 					'Api' => $api,
 					'InstanceID' => $this->InstanceID,
 					'Param1' => $param1
 					]));
-			}			
-		}
-
-		public function ReceiveData($JSONString)
-		{
-			$data = json_decode($JSONString,true);
-			If ($data['id']== $this->InstanceID) {
-				//IPS_LogMessage('UNIFIDV-'.$this->InstanceID,utf8_decode($data['data']));
-				switch($data['Api']) {
+				if (!$data) {
+					$this->SendDebug("UnifiCL", "Send Data Error: " . $api, 0);
+					return;
+				};
+				switch($api) {
 					case "getDevices":
-						$this->UpdateFormField("ID", "options", $data['data']);
-						$this->SetBuffer("devices", $data['data']);
+						$deviceData=json_encode(unserialize($data));
+						$this->UpdateFormField("ID", "options", $deviceData);
+						$this->SetBuffer("devices", $deviceData);
 						break;
 					case "getDeviceStats":
-						$JSONData = json_decode($data['data'],true);
+						$JSONData=json_decode(unserialize($data),true);
 						if ( is_array( $JSONData ) && isset( $JSONData ) ) {
+							$this->SendDebug("UnifiGW", json_encode($JSONData), 0);
 							$this->SetValue( 'UptimeSec', (( isset($JSONData[ 'uptimeSec' ]) ) ? $JSONData[ 'uptimeSec' ] : 0) );
 							$this->SetValue( 'UplinkTX', round( (( isset($JSONData[ 'uplink' ][ 'txRateBps' ]) ) ? $JSONData[ 'uplink' ][ 'txRateBps' ]/1000/1000 : 0),3 ) );
 							$this->SetValue( 'UplinkRX', round( (( isset($JSONData[ 'uplink' ][ 'rxRateBps' ]) ) ? $JSONData[ 'uplink' ][ 'rxRateBps' ]/1000/1000 : 0),3 ) );
@@ -105,9 +103,9 @@ declare(strict_types=1);
 								$this->SetValue( 'Memory', (( isset($JSONData[ 'memoryUtilizationPct' ]) ) ? $JSONData[ 'memoryUtilizationPct' ] : 0) );
 							}
 						}
-					break;
+						break;
 					case "getDeviceData":
-						$JSONData = json_decode($data['data'],true);
+						$JSONData=json_decode(unserialize($data),true);
 						if ( is_array( $JSONData ) && isset( $JSONData ) ) {
 							if ( isset( $JSONData[ 'statusCode' ] ) ) {
 								$this->SetValue( 'Online', false );
@@ -205,25 +203,29 @@ declare(strict_types=1);
 						//IPS_LogMessage('UNIFICL-'.$this->InstanceID,var_dump($array));						
 						break;
 					case "getDeviceName":
-						$this->SendDebug('UnifiDV', $data['data'], 0);
-						$this->SetValue( 'UplinkDevice', $data['data']);
+						$data=unserialize($data);
+						$this->SendDebug('UnifiDV', $data, 0);
+						$this->SetValue( 'UplinkDevice', $data);
 						break;
 					case "setPortCycle":
-						$this->SendDebug('UnifiDV', 'PortyCycle: '.$data['data'], 0);
-						echo($data['data']);
+						$data=unserialize($data);
+						$this->SendDebug('UnifiDV', 'PortyCycle: '.$data, 0);
+						echo($data);
 						break;
 					case "setRestartDevice":
-						$this->SendDebug('UnifiDV', 'RestartDevice: '.$data['data'], 0);
-						echo($data['data']);
+						$data=unserialize($data);
+						$this->SendDebug('UnifiDV', 'RestartDevice: '.$data, 0);
+						echo($data);
 						break;
-				}
-			}			
+
+				}			
+			}
 		}
 
 		public function PowerCycle(int $port)
 		{
 			if ($this->HasActiveParent()) {
-				$this->Send('setPortCycle',strval($port));			
+				$this->Send('setPortCycle',strval($port));
 			}
 		}
 

@@ -58,27 +58,25 @@ class UnifiClient extends IPSModule
 		public function Send(string $api, string $param1)
 		{	
 			if ($this->HasActiveParent()) {
-				$this->SendDataToParent(json_encode(['DataID' => '{4A5538F1-1C38-198A-3144-D806E0DADF87}',
+				$data=$this->SendDataToParent(json_encode(['DataID' => '{4A5538F1-1C38-198A-3144-D806E0DADF87}',
 					'Api' => $api,
 					'InstanceID' => $this->InstanceID,
 					'Param1' => $param1
 					]));
-			}			
-		}		
-
-
-		public function ReceiveData($JSONString)
-		{
-			$data = json_decode($JSONString,true);
-			If ($data['id']== $this->InstanceID) {
-				//IPS_LogMessage('UNIFICL-'.$this->InstanceID,utf8_decode($data['data']));
-				switch($data['Api']) {
+				if (!$data) {
+					$this->SendDebug("UnifiCL", "Send Data Error: " . $api, 0);
+					return;
+				};
+				switch($api) {
 					case "getClients":
-						$this->UpdateFormField("ID", "options", $data['data']);
-						$this->SetBuffer("clients", $data['data']);
+						$deviceData=json_encode(unserialize($data));
+						$this->UpdateFormField("ID", "options", $deviceData);
+						$this->SetBuffer("clients", $deviceData);
 						break;
 					case "getClientData":
-						$array = json_decode($data['data'],true);
+						$array=json_decode(unserialize($data),true);
+						$this->SendDebug("UnifiCL", unserialize($data), 0);
+						# $array = json_decode($data['data'],true);
 						if ( isset( $array[ 'statusCode' ] ) ) {
 							if ($array[ 'statusCode' ]== 404) {
 								// instance inactive
@@ -87,8 +85,7 @@ class UnifiClient extends IPSModule
 								$this->SetValue( 'UplinkDevice', '-');
 							}
 						}	
-			
-						$this->SendDebug("UnifiCL", $data['data'], 0);
+
 						if ( is_array( $array ) && isset( $array ) ) {
 							if ( isset( $array[ 'statusCode' ] ) ) {
 								$this->SetValue( 'Online', false );
@@ -114,9 +111,11 @@ class UnifiClient extends IPSModule
 						}
 						break;
 					case "getDeviceName":
-						$this->SendDebug("UnifiCL", $data['data'], 0);
-						$this->SetValue( 'UplinkDevice', $data['data']);
+						$data=unserialize($data);
+						$this->SendDebug("UnifiCL", $data, 0);
+						$this->SetValue( 'UplinkDevice', $data);
 						break;
+
 				}
 			}			
 		}

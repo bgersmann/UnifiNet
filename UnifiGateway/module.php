@@ -55,44 +55,46 @@ class UnifiGateway extends IPSModule
 			switch ($data->Api) {
 				case "getClients":
 					$array = $this->getClients();
-					$this->send($data->InstanceID,$data->Api,json_encode($array));
+					return serialize($array);
 					break;
                 case "getClientData":
 					$jsonString = $this->getClientData(IPS_GetProperty( $data->InstanceID, 'ID' ));
-					$this->send($data->InstanceID,$data->Api,$jsonString);
+					return serialize($jsonString);
 					break;
                 case "getDevices":
 					$array = $this->getDevices();
-					$this->send($data->InstanceID,$data->Api,json_encode($array));
+					return serialize($array);
 					break;
                 case "getDeviceData":
 					$jsonString = $this->getDeviceData(IPS_GetProperty( $data->InstanceID, 'ID' ));
-					$this->send($data->InstanceID,$data->Api,$jsonString);
+					return serialize($jsonString);
 					break;
                 case "getDevicesConfig":
                     $jsonString = $this->getDevicesConfig();
-					$this->send($data->InstanceID,$data->Api,$jsonString);
+					return serialize($jsonString);
 					break;
                 case "getDeviceStats":                    
                     $jsonString = $this->getDeviceStats(IPS_GetProperty( $data->InstanceID, 'ID' ));
-					$this->send($data->InstanceID,$data->Api,$jsonString);
+                    return serialize($jsonString);
+
                     break;
                 case "getDeviceName":
                     $this->SendDebug("UnifiGW", json_encode($data), 0);
                     if (isset($data->Param1)){
                         $jsonString = $this->getDeviceName($data->Param1);
-                        $this->send($data->InstanceID,$data->Api,$jsonString);
-                    }                   
+                        return serialize($jsonString);  
+                    } 
+                    return serialize(false);
                     break;
                 case "setPortCycle":
                     if (isset($data->Param1)){
                         $jsonString = $this->setPortCycle(IPS_GetProperty( $data->InstanceID, 'ID' ),intval($data->Param1));
-                        $this->send($data->InstanceID,$data->Api,"");
-                    } 
+                        return serialize($jsonString);
+                    }
                     break;
                 case "setRestartDevice":
                     $jsonString = $this->setRestartDevice(IPS_GetProperty( $data->InstanceID, 'ID' ));
-                    $this->send($data->InstanceID,$data->Api,"");
+                    return serialize($jsonString);
                     break;
 
 			}

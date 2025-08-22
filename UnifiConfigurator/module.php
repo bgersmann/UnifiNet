@@ -25,30 +25,27 @@ declare(strict_types=1);
 		public function Send(string $api)
 		{		
 			if ($this->HasActiveParent()) {
-				$this->SendDataToParent(json_encode(['DataID' => '{4A5538F1-1C38-198A-3144-D806E0DADF87}',
+				$data = $this->SendDataToParent(json_encode(['DataID' => '{4A5538F1-1C38-198A-3144-D806E0DADF87}',
 					'Api' => $api,
 					'InstanceID' => $this->InstanceID
 					]));
+				if (!$data) {
+					$this->SendDebug("UnifiCL", "Send Data Error: " . $api, 0);
+					return;
+				};
+				switch($api) {
+					case "getDevicesConfig":						
+						$data = unserialize($data);
+						$this->SendDebug("UNIFICG", "getDevicesConfig: " . $data, 0);
+						$this->UpdateFormField("UnifiDevices", "values", $data);
+						$this->SetBuffer("configurator", $data);					
+						break;
+
+				}
 			}
 		}
 
-		public function ReceiveData($JSONString)
-		{
-			$data = json_decode($JSONString,true);
-			If ($data['id']== $this->InstanceID) {
-				//IPS_LogMessage('UNIFICL-'.$this->InstanceID,utf8_decode($data['data']));
-				switch($data['Api']) {
-					case "getDevicesConfig":
-						$this->SendDebug("UNIFICG", "getDevicesConfig: " . json_encode( $data['data']), 0);
-						$this->UpdateFormField("UnifiDevices", "values", $data['data']);
-						$this->SetBuffer("configurator", $data['data']);					
-						break;
-				}
-			}			
-		}
-
-
-		 public function GetConfigurationForm()
+		public function GetConfigurationForm()
 		{
 			if ($this->HasActiveParent()) {
 				$this->Send("getDevicesConfig");
