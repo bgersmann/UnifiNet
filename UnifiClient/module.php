@@ -83,6 +83,12 @@ class UnifiClient extends IPSModule
 								$this->SendDebug("UnifiCL", "Device Offline: " . json_encode($array), 0);
 								$this->SetValue( 'Online', false );
 								$this->SetValue( 'UplinkDevice', '-');
+							} else if ($array[ 'statusCode' ]== 404) {
+								// instance inactive
+								$this->SendDebug("UnifiCL", "Device Not Found: " . json_encode($array), 0);
+								$this->SetValue( 'Online', false );
+								$this->SetValue( 'UplinkDevice', '-');
+								$this->SetStatus( $JSONData[ 'statusCode' ] );
 							}
 						}	
 
@@ -126,6 +132,7 @@ class UnifiClient extends IPSModule
 			}			
 			$arrayStatus = array();
 			$arrayStatus[] = array( 'code' => 102, 'icon' => 'active', 'caption' => 'Instanz ist aktiv' );
+			$arrayStatus[] = array( 'code' => 500, 'icon' => 'active', 'caption' => 'Instanz ist fehlerhaft: Server Error' );
 
 			$arrayElements = array();
 			$arrayElements[] = array( 'type' => 'Label', 'bold' => true, 'label' => $this->Translate('UniFi Client') );
