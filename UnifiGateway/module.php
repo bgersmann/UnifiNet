@@ -178,7 +178,7 @@ class UnifiGateway extends IPSModule
         }
         $JSONData = json_decode( $RawData, true );
         if ( isset( $JSONData[ 'statusCode' ] ) ) {
-            if ($JSONData[ 'statusCode' ]<> 200 && $JSONData[ 'statusCode' ]<> 404) {
+            if ($JSONData[ 'statusCode' ]<> 200 && $JSONData[ 'statusCode' ]<> 404 && $JSONData[ 'statusCode' ]<> 500) {
                 // instance inactive
 			    $this->SetStatus( $JSONData[ 'statusCode' ] );
             }        
