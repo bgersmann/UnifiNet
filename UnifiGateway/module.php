@@ -481,7 +481,7 @@ class UnifiGateway extends IPSModule
                         'Type'	=>'Client',
                         'ID'		=>isset( $client[ 'id' ] ) ? $client[ 'id' ] : 'missing' ,
                         'IP'		=>isset( $client[ 'ipAddress' ] ) ? $client[ 'ipAddress' ] : '',
-                        'instanceID'	=>$this->getInstanceIDForGuid( $client[ 'id' ], '{75E5E0AD-02F4-61E0-E1AF-57F66DAF7381}' )
+                        'instanceID'	=>$this->getInstanceIDForGuid( isset( $client[ 'id' ] ) ? $client[ 'id' ] : '', '{75E5E0AD-02F4-61E0-E1AF-57F66DAF7381}' )
                         );
                         if (isset($client['id']) and !empty($client['id'])) {
                             $addValue['create'] = array(

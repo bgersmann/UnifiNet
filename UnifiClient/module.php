@@ -34,7 +34,7 @@ class UnifiClient extends IPSModule
 			$this->MaintainVariable( 'ClientIP', $this->Translate( 'Client IP' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, 1 );
 			$variablenID=@$this->GetIDForIdent("ConnectedAt");
 			if ($variablenID==false) {
-				$variablenID = $this->RegisterVariableInteger('ConnectedAt', $this->Translate( 'Connected At' ), [ 'PRESENTATION' => VARIABLE_PRESENTATION_DURATION],$vpos++);
+				$variablenID = $this->RegisterVariableInteger('ConnectedAt', $this->Translate( 'Connected At' ), [ 'PRESENTATION' => VARIABLE_PRESENTATION_DATE_TIME],$vpos++);
 				IPS_SetIcon($variablenID,'circle-info');
 			} else {
 				$vpos++;

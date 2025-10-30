@@ -2,7 +2,7 @@
     "id": "{A792D3EC-FEC5-A8E6-F792-E141097C6AB0}",
     "name": "UnifiGateway",
     "type": 1,
-    "vendor": "unifi",
+    "vendor": "Unifi",
     "aliases": [],
     "parentRequirements": [],
     "childRequirements": [
