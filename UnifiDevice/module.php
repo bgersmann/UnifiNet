@@ -121,7 +121,11 @@ declare(strict_types=1);
 								$this->SetValue( 'FirmwareUpdate', $JSONData[ 'firmwareUpdatable' ] );
 								$this->SetValue( 'Online', ( $JSONData[ 'state' ] == 'ONLINE' ) ? true : false );
 								if ($this->ReadPropertyBoolean("MACAnzeigen")) {
-									$this->SetValue( 'MAC', $JSONData[ 'macAddress' ] );
+									if ( isset( $JSONData['macAddress'] ) ) {
+										$this->SetValue( 'MAC', $JSONData[ 'macAddress' ] );
+									} else {
+										$this->SetValue( 'MAC', '-' );
+									}
 								}
 								if ( isset( $JSONData['uplink']['deviceId'] ) ) {									
 									$this->Send('getDeviceName',$JSONData['uplink']['deviceId']);
