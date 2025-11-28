@@ -52,7 +52,50 @@ class UnifiGateway extends IPSModule
 		}
 
 		if (isset($data->Api)) {
-			switch ($data->Api) {
+			switch ($data->Api) {               
+                case "getSiteWans":
+                    if (isset($data->Param1)) {
+                        $array = $this->getSiteWans(IPS_GetProperty( $data->InstanceID, 'SiteID' ));
+                        return serialize($array);
+                    }
+                    return serialize([]);
+                    break;
+                case "getWifis":
+                    if (isset($data->Param1)) {
+                        $array = $this->getWifis();
+                        return serialize($array);
+                    }
+                    return serialize([]);
+                    break;
+                case "getWifiDetails":
+                    if (!$this->networkVersionCheck()) {
+                        return serialize(['code'=> 600]);
+                    }
+                    $array = $this->getWifiDetails(IPS_GetProperty( $data->InstanceID, 'ID' ));
+                    return serialize($array);                    
+                    break;
+                case "getNetworks":
+                    if (!$this->networkVersionCheck()) {
+                        return serialize(['code'=> 600]);
+                    }
+                    if (isset($data->Param1)) {
+                        $array = $this->getNetworks();
+                        return serialize($array);
+                    }
+                    return serialize([]);
+                    break;
+                case "getNetworkDetails":
+                    $array = $this->getNetworkDetails(IPS_GetProperty( $data->InstanceID, 'ID' ));
+                    return serialize($array);                    
+                    break;
+                case "updateNetworkSettings":
+                    $jsonString = $this->updateNetworkSettings(IPS_GetProperty( $data->InstanceID, 'ID' ),$data->Param1);
+                    return serialize($jsonString);
+                    break;                     
+                case "updateWifiSettings":
+                    $jsonString = $this->updateWifiSettings(IPS_GetProperty( $data->InstanceID, 'ID' ),$data->Param1);
+                    return serialize($jsonString);
+                    break;                  
 				case "getClients":
 					$array = $this->getClients();
 					return serialize($array);
@@ -96,6 +139,10 @@ class UnifiGateway extends IPSModule
                     $jsonString = $this->setRestartDevice(IPS_GetProperty( $data->InstanceID, 'ID' ));
                     return serialize($jsonString);
                     break;
+                case "getSites":
+					$array = $this->getSites();
+					return serialize($array);
+					break;
 
 			}
 			
@@ -223,6 +270,142 @@ class UnifiGateway extends IPSModule
 			return [];
 		}
 
+    public function getApiDataPut( string $endpoint = '', string $PutData = '' ):array {
+            $ServerAddress = $this->ReadPropertyString( 'ServerAddress' );
+            $APIKey = $this->ReadPropertyString( 'APIKey' );
+            if ($APIKey == '') {
+                $this->SendDebug("UnifiSiteApi", "API Key is empty", 0);
+                $this->SetStatus( 201 ); // Set status to error
+                return [];
+            }
+
+            //https://192.168.178.1/proxy/network/integration/v1/sites/{siteId}/wifi/broadcasts/{wifiBroadcastId}
+            $ch = curl_init();
+            curl_setopt( $ch, CURLOPT_URL, 'https://'.$ServerAddress.'/proxy/network/integrations/v1/sites'.$endpoint );
+            curl_setopt( $ch, CURLOPT_CUSTOMREQUEST, 'PUT' );
+            curl_setopt( $ch, CURLOPT_POSTFIELDS, $PutData );
+            curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+            curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, false );
+            curl_setopt( $ch, CURLOPT_SSL_VERIFYHOST, false );
+            curl_setopt( $ch, CURLOPT_HTTPHEADER, array( 'X-API-KEY:'.$APIKey, 'Content-Type: application/json' ));
+            curl_setopt( $ch, CURLOPT_SSLVERSION, 'CURL_SSLVERSION_TLSv1' );
+            $RawData = curl_exec( $ch );
+            curl_close( $ch );
+            if ($RawData === false) {
+                // Handle error
+                $this->SendDebug("UnifiGW", "Curl error: " . curl_error($ch), 0);
+                $this->SetStatus( 201 ); // Set status to error
+                return [];
+            }
+            $JSONData = json_decode( $RawData, true );
+            if ( isset( $JSONData[ 'statusCode' ] ) ) {
+                if ($JSONData[ 'statusCode' ]<> 200) {
+                    // instance inactive
+                    $this->SendDebug("UnifiGW", "Curl error: " . json_encode($JSONData), 0);
+                    return [];
+                }
+            }
+            $this->SendDebug("UnifiGW", "GetApiDataPut: " . $RawData, 0);
+            return [];
+        }
+
+    public function getSiteWans(string $siteName): array {
+        if ($siteName === '') {
+            return [];
+        }
+        $siteID=$this->getSiteID($siteName);
+        return $this->getApiData('/'.$siteID.'/wans');
+    }
+
+    public function getWifis(): array {
+        $site = $this->ReadPropertyString( 'Site' );
+        $siteID = $this->getSiteID( $site );
+        $JSONData=$this->getApiData('/'.$siteID.'/wifi/broadcasts');
+        $this->SendDebug("UnifiGW", "getSiteWifis: " .json_encode($JSONData) , 0);
+        if ( is_array( $JSONData ) && isset( $JSONData ) ) {
+            if ( isset( $JSONData['error'] ) ) {
+                if ($JSONData['error']['code']<> 200) {
+                    // instance inactive
+                    $this->SetStatus( $JSONData['error']['code'] );
+                    $value[] = [
+                        'caption'=>'errror',
+                        'value'=> 'default'
+                    ];
+                    return $value;
+                }        
+            }
+            if ( isset( $JSONData['data'] ) ) {
+                $sites = $JSONData[ 'data' ];
+            foreach ( $sites as $site ) {
+                $value[] = [
+                    'caption'=>$site[ 'name' ],
+                    'value'=> $site[ 'id' ]
+                ];
+            }
+            } else {
+                $value[] = [
+                    'caption'=>'default',
+                    'value'=> 'default'
+                ];
+            }            
+            return $value;
+        }
+        return [];
+    }
+
+    public function getNetworks(): array {
+        $site = $this->ReadPropertyString( 'Site' );
+        $siteID = $this->getSiteID( $site );
+        $JSONData=$this->getApiData('/'.$siteID.'/networks');
+        $this->SendDebug("UnifiGW", "getNetworks: " .json_encode($JSONData) , 0);
+        if ( is_array( $JSONData ) && isset( $JSONData ) ) {
+            if ( isset( $JSONData['error'] ) ) {
+                if ($JSONData['error']['code']<> 200) {
+                    // instance inactive
+                    $this->SetStatus( $JSONData['error']['code'] );
+                    $value[] = [
+                        'caption'=>'errror',
+                        'value'=> 'default'
+                    ];
+                    return $value;
+                }        
+            }
+            if ( isset( $JSONData['data'] ) ) {
+                $sites = $JSONData[ 'data' ];
+            foreach ( $sites as $site ) {
+                $value[] = [
+                    'caption'=>$site[ 'name' ],
+                    'value'=> $site[ 'id' ]
+                ];
+            }
+            } else {
+                $value[] = [
+                    'caption'=>'default',
+                    'value'=> 'default'
+                ];
+            }            
+            return $value;
+        }
+        return [];
+    }
+
+    public function getNetworkDetails(string $networkID): array {
+        if ($networkID === '') {
+            return [];
+        }
+        $site = $this->ReadPropertyString( 'Site' );
+        $siteID = $this->getSiteID( $site );
+        return $this->getApiData('/'.$siteID.'/networks/'.$networkID);
+    }
+    public function getWifiDetails(string $wifiID): array {
+        if ($wifiID === '') {
+            return [];
+        }
+        $site = $this->ReadPropertyString( 'Site' );
+        $siteID = $this->getSiteID( $site );
+        return $this->getApiData('/'.$siteID.'/wifi/broadcasts/'.$wifiID);
+    }
+
     public function getSites():array {
         $JSONData = $this->getApiData();       
         if ( is_array( $JSONData ) && isset( $JSONData ) ) {
@@ -297,6 +480,29 @@ class UnifiGateway extends IPSModule
         return 'notfound';        
     }
 
+    private function networkVersionCheck(): bool
+    {
+        $version = $this->getNetworkVersion();
+        if ($version === '' || $version === 'notfound') {
+            $this->SendDebug('UnifiGW', 'Unable to determine network version, skipping wifi details request.', 0);
+            return false;
+        }
+        $numericVersion = $this->parseNumericVersion($version);
+        if ($numericVersion < 10.0) {
+            $this->SendDebug('UnifiGW', 'Network version ' . $version . ' is below 10.0. getWifiDetails requires >= 10.0.', 0);
+            return false;
+        }
+        return true;
+    }
+
+    private function parseNumericVersion(string $version): float
+    {
+        if (preg_match('/\d+(?:\.\d+)?/', $version, $matches) === 1) {
+            return (float) $matches[0];
+        }
+        return 0.0;
+    }
+
     public function getSiteID( string $site = 'default' ):string {
         $JSONData = $this->getApiData();
         if ( is_array( $JSONData ) && isset( $JSONData ) ) {
@@ -313,6 +519,25 @@ class UnifiGateway extends IPSModule
         }
         return '';
     }
+
+
+    public function getWifiID( string $siteID, string $wifi  ):string {
+        $JSONData = $this->getApiData('/'.$siteID.'/wifi/broadcasts');
+        if ( is_array( $JSONData ) && isset( $JSONData ) ) {
+            if ( isset( $JSONData['data'] ) ) {
+                foreach ( $JSONData[ 'data' ] as $item ) {
+                if ( $item[ 'name' ] == $wifi ) {
+                    return $item[ 'id' ];
+                }
+            }
+            } else {
+                // instance inactive
+                $this->SetStatus( 201 );
+            }            
+        }
+        return '';
+    }
+
     public function getClients():array {
         $site = $this->ReadPropertyString( 'Site' );
         $siteID = $this->getSiteID( $site );
@@ -338,6 +563,26 @@ class UnifiGateway extends IPSModule
             }            
             return $value;
         }
+    }
+
+    public function updateNetworkSettings(string $networkID, string $jsonPayload):string {
+        $site = $this->ReadPropertyString( 'Site' );
+        $siteID = $this->getSiteID( $site );
+        //https://192.168.178.1/proxy/network/integration/v1/sites/{siteId}/wifi/broadcasts/{wifiBroadcastId}
+        $this->SendDebug("UnifiGW", "updateNetworkSettings: " . $jsonPayload, 0);
+        $this->SendDebug("UnifiGW", "updateNetworkSettings: " . '/'.$siteID.'/networks/'.$networkID.'/', 0);
+        $JSONData=$this->getApiDataPut( '/'.$siteID.'/networks/'.$networkID, $jsonPayload );
+        return json_encode($JSONData);
+    }
+
+    public function updateWifiSettings(string $wifiID, string $jsonPayload):string {
+        $site = $this->ReadPropertyString( 'Site' );
+        $siteID = $this->getSiteID( $site );
+        //https://192.168.178.1/proxy/network/integration/v1/sites/{siteId}/wifi/broadcasts/{wifiBroadcastId}
+        $this->SendDebug("UnifiGW", "updateWifiSettings: " . $jsonPayload, 0);
+        $this->SendDebug("UnifiGW", "updateWifiSettings: " . '/'.$siteID.'/wifi/broadcasts/'.$wifiID.'/', 0);
+        $JSONData=$this->getApiDataPut( '/'.$siteID.'/wifi/broadcasts/'.$wifiID, $jsonPayload );
+        return json_encode($JSONData);
     }
 
     public function setPortCycle(string $deviceID, int $port):string {
@@ -468,13 +713,13 @@ class UnifiGateway extends IPSModule
                 $value[] = $addValue;
             }
         }
-            $JSONData = $this->getApiData( '/'.$siteID.'/clients?limit=200' );
-            if ( is_array( $JSONData ) && isset( $JSONData ) ) {
-                $clients = $JSONData[ 'data' ];
-                usort( $clients, function ( $a, $b ) {
+        $JSONData = $this->getApiData( '/'.$siteID.'/clients?limit=200' );
+        if ( is_array( $JSONData ) && isset( $JSONData ) ) {
+            $clients = $JSONData[ 'data' ];
+            usort( $clients, function ( $a, $b ) {
                 return $a[ 'name' ]>$b[ 'name' ];
-                });
-                foreach ( $clients as $client )
+            });
+            foreach ( $clients as $client )
                 {
                    $addValue = array(
                         'Name'	=>$client[ 'name' ],
@@ -493,8 +738,64 @@ class UnifiGateway extends IPSModule
                             );
                         }
                     $value[] = $addValue;
+                }
+            }
+        if ($this->networkVersionCheck()) {  
+            $JSONData = $this->getApiData( '/'.$siteID.'/wifi/broadcasts?limit=200' );
+            if ( is_array( $JSONData ) && isset( $JSONData ) ) {
+                $wifis = $JSONData[ 'data' ];
+                usort( $wifis, function ( $a, $b ) {
+                    return $a[ 'name' ]>$b[ 'name' ];
+                });
+                foreach ( $wifis as $wifi )
+                    {
+                    $addValue = array(
+                            'Name'	=>$wifi[ 'name' ],
+                            'Type'	=>'Wifi-'.  (isset( $wifi[ 'type' ] ) ? $wifi[ 'type' ] : 'missing'),
+                            'ID'		=>isset( $wifi[ 'id' ] ) ? $wifi[ 'id' ] : 'missing' ,
+                            'IP'		=>'Wifi-Network',
+                            'instanceID'	=>$this->getInstanceIDForGuid( isset( $wifi[ 'id' ] ) ? $wifi[ 'id' ] : '', '{CA0DC52D-37B8-32A1-C017-8BCB7EF2FAFB}' )
+                            );
+                            if (isset($wifi['id']) and !empty($wifi['id'])) {
+                                $addValue['create'] = array(
+                                'moduleID'      => '{CA0DC52D-37B8-32A1-C017-8BCB7EF2FAFB}',
+                                'configuration' => [
+                                    'ID'	=> isset( $wifi[ 'id' ] ) ? $wifi[ 'id' ] : ''
+                                ],
+                                'name' => $wifi[ 'name' ]
+                                );
+                            }
+                        $value[] = $addValue;
                     }
                 }
-                return json_encode($value);
+            $JSONData = $this->getApiData( '/'.$siteID.'/networks?limit=200' );
+            if ( is_array( $JSONData ) && isset( $JSONData ) ) {
+                $networks = $JSONData[ 'data' ];
+                usort( $networks, function ( $a, $b ) {
+                    return $a[ 'name' ]>$b[ 'name' ];
+                });
+                foreach ( $networks as $network )
+                    {
+                    $addValue = array(
+                            'Name'	=>$network[ 'name' ],
+                            'Type'	=>(isset( $network[ 'management' ] ) ? $network[ 'management' ] : 'missing'),
+                            'ID'		=>isset( $network[ 'id' ] ) ? $network[ 'id' ] : 'missing' ,
+                            'IP'		=>'VlanID-'.(isset( $network[ 'vlanId' ] ) ? $network[ 'vlanId' ] : ''),
+                            'instanceID'	=>$this->getInstanceIDForGuid( isset( $network[ 'id' ] ) ? $network[ 'id' ] : '', '{CCD58E88-A596-0F92-38C8-72BCE28BCDED}' )
+                            );
+                            if (isset($network['id']) and !empty($network['id'])) {
+                                $addValue['create'] = array(
+                                'moduleID'      => '{CCD58E88-A596-0F92-38C8-72BCE28BCDED}',
+                                'configuration' => [
+                                    'ID'	=> isset( $network[ 'id' ] ) ? $network[ 'id' ] : ''
+                                ],
+                                'name' => $network[ 'name' ]
+                                );
+                            }
+                        $value[] = $addValue;
+                    }
+                }
+            }
+        return json_encode($value);
     }
 }

@@ -1,0 +1,26 @@
+{
+    "translations": {
+        "en": {
+            "UniFi Wifi Controller": "UniFi Wifi Controller",
+            "Set Timer to activate instance. The instance will then automatically collect data from the device at the specified interval.": "Set Timer to activate instance. The instance will then automatically collect data from the device at the specified interval.",
+            "Get Wifis": "Get Wifis",
+            "Get Wifi Details": "Get Wifi Details",
+            "Name": "Name",
+            "Type": "Type",
+            "Aktiv": "Active",
+            "Security": "Security",
+            "Frequencies": "Frequencies"
+        },
+        "de": {
+            "UniFi Wifi Controller": "UniFi Wifi Controller",
+            "Set Timer to activate instance. The instance will then automatically collect data from the device at the specified interval.": "Timer setzen, um die Instanz zu aktivieren. Danach sammelt sie die Daten des Geraets automatisch im angegebenen Intervall.",
+            "Get Wifis": "WLANs abrufen",
+            "Get Wifi Details": "WLAN-Details abrufen",
+            "Name": "Name",
+            "Type": "Typ",
+            "Aktiv": "Aktiv",
+            "Security": "Sicherheit",
+            "Frequencies": "Frequenzen"
+        }
+    }
+}

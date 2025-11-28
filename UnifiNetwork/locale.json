@@ -1,0 +1,26 @@
+{
+    "translations": {
+        "en": {
+            "UniFi Network Controller": "UniFi Network Controller",
+            "Set Timer to activate instance. The instance will then automatically collect data from the device at the specified interval.": "Set Timer to activate instance. The instance will then automatically collect data from the device at the specified interval.",
+            "Get Networks": "Get Networks",
+            "Get Network Details": "Get Network Details",
+            "Network Name": "Network Name",
+            "Network Type": "Network Type",
+            "Network Enabled": "Network Enabled",
+            "Network VLAN": "Network VLAN",
+            "Network Trusted DHCP": "Network Trusted DHCP"
+        },
+        "de": {
+            "UniFi Network Controller": "UniFi Netzwerk Controller",
+            "Set Timer to activate instance. The instance will then automatically collect data from the device at the specified interval.": "Timer setzen, um die Instanz zu aktivieren. Danach sammelt sie die Daten des Geraets automatisch im angegebenen Intervall.",
+            "Get Networks": "Netzwerke abrufen",
+            "Get Network Details": "Netzwerkdetails abrufen",
+            "Network Name": "Netzwerkname",
+            "Network Type": "Netzwerktyp",
+            "Network Enabled": "Netzwerk aktiv",
+            "Network VLAN": "Netzwerk VLAN",
+            "Network Trusted DHCP": "Vertrauenswuerdige DHCP-Server"
+        }
+    }
+}

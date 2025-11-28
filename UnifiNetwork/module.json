@@ -1,0 +1,18 @@
+{
+    "id": "{CCD58E88-A596-0F92-38C8-72BCE28BCDED}",
+    "name": "UnifiNetwork",
+    "url": "https://github.com/bgersmann/UnifiNet",
+    "type": 3,
+    "vendor": "Unifi",
+    "aliases": [
+    ],
+    "parentRequirements": [
+        "{4A5538F1-1C38-198A-3144-D806E0DADF87}"
+    ],
+    "childRequirements": [
+    ],
+    "implemented": [
+        "{6E3E09BC-4C83-0ABF-4C97-7E7B8C70A64E}"
+    ],
+    "prefix": "UNIFINW"
+}
