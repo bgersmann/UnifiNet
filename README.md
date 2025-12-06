@@ -12,7 +12,10 @@ Folgende Module beinhaltet das UnifiNetwork Repository:
 	Der Konfigurator richtet Unifi Geräte und Clients in IP-Symcon ein.
 
 - __UnifiGateway__ ([Dokumentation](UnifiGateway))  
-- UnifiSiteController ([Dokumentation](UnifiSiteController))
-- UnifiWifi ([Dokumentation](UnifiWifi))
-- UnifiNetwork ([Dokumentation](UnifiNetwork))
 	Die Schnittstelle zwischen Symcon und der Local Unifi Network API
+
+- __UnifiWifi__ ([Dokumentation](UnifiWifi))
+	Dieses Modul repräsentiert die Unifi Wifis in IP-Symcon.
+
+- __UnifiNetwork__ ([Dokumentation](UnifiNetwork))
+	Dieses Modul repräsentiert die Unifi Networks in IP-Symcon.
