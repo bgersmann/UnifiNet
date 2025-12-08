@@ -668,16 +668,20 @@ class UnifiGateway extends IPSModule
             }
             return '';
         }
+
     private function getInstanceIDForGuid( $id, $guid )
-    {
-        $instanceIDs = IPS_GetInstanceListByModuleID( $guid );
-        foreach ( $instanceIDs as $instanceID ) {
-            if ( IPS_GetProperty( $instanceID, 'ID' ) == $id ) {
-                return $instanceID;
+        {
+            $instanceIDs = IPS_GetInstanceListByModuleID( $guid );
+            foreach ( $instanceIDs as $instanceID ) {
+                if ( IPS_GetProperty( $instanceID, 'ID' ) == $id ) {
+                    $instance=IPS_GetInstance($instanceID);
+                    if ($instance['ConnectionID']==$this->InstanceID) {
+                        return $instanceID;
+                    }
+                }
             }
+            return 0;
         }
-        return 0;
-    }
 
     public function getDevicesConfig():string {
         $ServerAddress = $this->ReadPropertyString( 'ServerAddress' );
