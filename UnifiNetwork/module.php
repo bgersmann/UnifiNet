@@ -52,7 +52,9 @@ class UnifiNetwork extends IPSModule
 								// UniFi Network Version zu alt. Erst ab 10+ verfügbar
 								$this->SetStatus( 600 );
 								return;
-							} 
+							} else {
+								$this->SetStatus( 102 );
+							}
 							$this->SendDebug("UnifiNW", json_encode($JSONData), 0);
                             $type = (isset($JSONData[ 'management' ]) ? $JSONData[ 'management' ] : 'UNMANAGED');
 							$this->SetValue( 'NetworkName', (( isset($JSONData[ 'name' ]) ) ? $JSONData[ 'name' ] : 'Default') );

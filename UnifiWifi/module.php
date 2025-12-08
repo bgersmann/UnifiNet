@@ -47,7 +47,9 @@ class UnifiWifi extends IPSModule
 								// UniFi Network Version zu alt. Erst ab 10+ verfügbar
 								$this->SetStatus( 600 );
 								return;
-							} 							
+							} else {
+								$this->SetStatus( 102 );
+							}
 							$this->SendDebug("UnifiWF", json_encode($JSONData), 0);
                             $type= (( isset($JSONData[ 'type' ]) ) ? $JSONData[ 'type' ] : 'STANDARD');
 							$this->SetValue( 'WifiName', (( isset($JSONData[ 'name' ]) ) ? $JSONData[ 'name' ] : 'Default') );
@@ -72,11 +74,8 @@ class UnifiWifi extends IPSModule
 								}, $bands);
 								$frequenciesValue = implode('|', $normalized);
 							}
-							$this->SetValue('WifiFrequencies', $frequenciesValue);
-							
+							$this->SetValue('WifiFrequencies', $frequenciesValue);							
 						}
-
-
                         break;
                     }
 			}
