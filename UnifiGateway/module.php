@@ -491,20 +491,11 @@ class UnifiGateway extends IPSModule
             $this->SendDebug('UnifiGW', 'Unable to determine network version, skipping wifi details request.', 0);
             return false;
         }
-        $numericVersion = $this->parseNumericVersion($version);
-        if ($numericVersion < 10.0) {
+        if (version_compare($version, '10.0', '<')) {
             $this->SendDebug('UnifiGW', 'Network version ' . $version . ' is below 10.0. getWifiDetails requires >= 10.0.', 0);
             return false;
         }
         return true;
-    }
-
-    private function parseNumericVersion(string $version): float
-    {
-        if (preg_match('/\d+(?:\.\d+)?/', $version, $matches) === 1) {
-            return (float) $matches[0];
-        }
-        return 0.0;
     }
 
     public function getSiteID( string $site = 'default' ):string {
