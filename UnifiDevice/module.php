@@ -41,8 +41,8 @@ declare(strict_types=1);
 			$this->MaintainVariable( 'DeviceIP', $this->Translate( 'Device IP' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, 1 );
 			$this->MaintainVariable( 'Firmware', $this->Translate( 'Firmware' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, 1 );
 			$this->MaintainVariable( 'FirmwareUpdate', $this->Translate( 'Firmware Update' ), 0, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON'=> 'circle-info', 'OPTIONS'=> json_encode( [
-				[ 'ColorDisplay'=> self::COLOR_GREEN, 'Value'=> false, 'Caption'=> $this->Translate( 'Up to date' ), 'IconValue'=> '', 'IconActive'=> false, 'ColorActive'=> true, 'ColorValue'=> self::COLOR_GREEN, 'Color'=> -1 ],
-				[ 'ColorDisplay'=> self::COLOR_UPDATE, 'Value'=> true, 'Caption'=> $this->Translate( 'Update available' ), 'IconValue'=> '', 'IconActive'=> false, 'ColorActive'=> true, 'ColorValue'=> self::COLOR_UPDATE, 'Color'=> -1 ]
+				[ 'Caption'=> $this->Translate( 'Up to date' ), 'ColorActive'=> true, 'ColorValue'=> self::COLOR_GREEN, 'ContentColorActive'=> false, 'ContentColorValue'=> -1, 'IconActive'=> false, 'IconValue'=> '', 'Value'=> false ],
+				[ 'Caption'=> $this->Translate( 'Update available' ), 'ColorActive'=> true, 'ColorValue'=> self::COLOR_UPDATE, 'ContentColorActive'=> false, 'ContentColorValue'=> -1, 'IconActive'=> false, 'IconValue'=> '', 'Value'=> true ]
 			] ) ], $vpos++, 1 );
 						
 			$variablenID=@$this->GetIDForIdent("UptimeSec");
@@ -55,8 +55,8 @@ declare(strict_types=1);
 			$this->MaintainVariable( 'UplinkTX', $this->Translate( 'Uplink TX' ), 2, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'DIGITS'=> 3 , 'SUFFIX'=> 'Mbit/s' , 'ICON'=> 'network-wired'] , $vpos++, 1 );
 			$this->MaintainVariable( 'UplinkRX', $this->Translate( 'Uplink RX' ), 2, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'DIGITS'=> 3 , 'SUFFIX'=> 'Mbit/s' , 'ICON'=> 'network-wired'], $vpos++, 1 );
 			$this->MaintainVariable( 'Online', $this->Translate( 'Online' ), 0, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON'=> 'network-wired','OPTIONS'=> json_encode( [
-				[ 'ColorDisplay'=> self::COLOR_RED, 'Value'=> false, 'Caption'=> $this->Translate( 'Offline' ), 'IconValue'=> '', 'IconActive'=> false, 'ColorActive'=> true, 'ColorValue'=> self::COLOR_RED, 'Color'=> -1 ],
-				[ 'ColorDisplay'=> self::COLOR_GREEN, 'Value'=> true, 'Caption'=> $this->Translate( 'Online' ), 'IconValue'=> '', 'IconActive'=> false, 'ColorActive'=> true, 'ColorValue'=> self::COLOR_GREEN, 'Color'=> -1 ]
+				[ 'Caption'=> $this->Translate( 'Offline' ), 'ColorActive'=> true, 'ColorValue'=> self::COLOR_RED, 'ContentColorActive'=> false, 'ContentColorValue'=> -1, 'IconActive'=> false, 'IconValue'=> '', 'Value'=> false ],
+				[ 'Caption'=> $this->Translate( 'Online' ), 'ColorActive'=> true, 'ColorValue'=> self::COLOR_GREEN, 'ContentColorActive'=> false, 'ContentColorValue'=> -1, 'IconActive'=> false, 'IconValue'=> '', 'Value'=> true ]
 			] )], $vpos++, 1 );
 			$this->MaintainVariable( 'UplinkDevice', $this->Translate( 'Uplink Device' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, 1 );
 

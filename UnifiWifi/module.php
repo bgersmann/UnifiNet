@@ -160,8 +160,8 @@ class UnifiWifi extends IPSModule
 				'MAX' => 100,
 				'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}',
 				'OPTIONS' => json_encode( [
-					[ 'ColorDisplay'=> self::COLOR_RED, 'Value'=> false, 'Caption'=> $this->Translate( 'Inactive' ), 'IconValue'=> 'wifi-slash', 'IconActive'=> true, 'ColorActive'=> true, 'ColorValue'=> self::COLOR_RED, 'Color'=> -1 ],
-					[ 'ColorDisplay'=> self::COLOR_GREEN, 'Value'=> true, 'Caption'=> $this->Translate( 'Active' ), 'IconValue'=> '', 'IconActive'=> false, 'ColorActive'=> true, 'ColorValue'=> self::COLOR_GREEN, 'Color'=> -1 ]
+					[ 'Caption'=> $this->Translate( 'Inactive' ), 'ColorActive'=> true, 'ColorValue'=> self::COLOR_RED, 'ContentColorActive'=> false, 'ContentColorValue'=> -1, 'IconActive'=> true, 'IconValue'=> 'wifi-slash', 'Value'=> false ],
+					[ 'Caption'=> $this->Translate( 'Active' ), 'ColorActive'=> true, 'ColorValue'=> self::COLOR_GREEN, 'ContentColorActive'=> false, 'ContentColorValue'=> -1, 'IconActive'=> false, 'IconValue'=> '', 'Value'=> true ]
 				] ),
 				'INTERVALS_ACTIVE' => false,
 				'MULTILINE' => false,
@@ -188,7 +188,7 @@ class UnifiWifi extends IPSModule
 				'MAX' => 6,
 				'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}',
 				'OPTIONS' => json_encode( array_map( function ( $option ) {
-					return [ 'Value'=> $option[ 0 ], 'Caption'=> $this->Translate( $option[ 1 ] ), 'IconActive'=> false, 'IconValue'=> '', 'ColorActive'=> false, 'ColorValue'=> -1, 'Color'=> -1, 'ColorDisplay'=> -1 ];
+					return [ 'Caption'=> $this->Translate( $option[ 1 ] ), 'ColorActive'=> false, 'ColorValue'=> -1, 'ContentColorActive'=> false, 'ContentColorValue'=> -1, 'IconActive'=> false, 'IconValue'=> '', 'Value'=> $option[ 0 ] ];
 				}, [
 					[ 'OPEN', 'Open' ],
 					[ 'WPA2_PERSONAL', 'WPA2 Personal' ],
@@ -222,7 +222,7 @@ class UnifiWifi extends IPSModule
 				'MAX' => 100,
 				'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}',
 				'OPTIONS' => json_encode( array_map( function ( $option ) {
-					return [ 'Value'=> $option[ 0 ], 'Caption'=> $this->Translate( $option[ 1 ] ), 'IconActive'=> false, 'IconValue'=> '', 'ColorActive'=> false, 'ColorValue'=> -1, 'Color'=> -1, 'ColorDisplay'=> -1 ];
+					return [ 'Caption'=> $this->Translate( $option[ 1 ] ), 'ColorActive'=> false, 'ColorValue'=> -1, 'ContentColorActive'=> false, 'ContentColorValue'=> -1, 'IconActive'=> false, 'IconValue'=> '', 'Value'=> $option[ 0 ] ];
 				}, [
 					[ '2.4', '2.4 GHz' ],
 					[ '5', '5 GHz' ],
