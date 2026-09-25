@@ -146,12 +146,11 @@ class UnifiWifi extends IPSModule
 			$this->Translate('Active'),
 			0,
 			[
-				'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-				'USAGE_TYPE' => 0,
+				'PRESENTATION' => VARIABLE_PRESENTATION_ENUMERATION,
 				'ICON' => 'shield-halved',
 				'OPTIONS' => json_encode( [
-					[ 'Caption'=> $this->Translate( 'Inactive' ), 'ColorActive'=> true, 'ColorValue'=> self::COLOR_RED, 'ContentColorActive'=> false, 'ContentColorValue'=> -1, 'IconActive'=> true, 'IconValue'=> 'wifi-slash', 'Value'=> false ],
-					[ 'Caption'=> $this->Translate( 'Active' ), 'ColorActive'=> true, 'ColorValue'=> self::COLOR_GREEN, 'ContentColorActive'=> false, 'ContentColorValue'=> -1, 'IconActive'=> false, 'IconValue'=> '', 'Value'=> true ]
+					[ 'Caption'=> $this->Translate( 'Inactive' ), 'ColorActive'=> true, 'ColorValue'=> self::COLOR_RED, 'IconActive'=> true, 'IconValue'=> 'wifi-slash', 'Value'=> false ],
+					[ 'Caption'=> $this->Translate( 'Active' ), 'ColorActive'=> true, 'ColorValue'=> self::COLOR_GREEN, 'IconActive'=> false, 'IconValue'=> '', 'Value'=> true ]
 				] )
 			],
 			$vpos++,
