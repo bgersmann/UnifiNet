@@ -67,17 +67,17 @@ class UnifiNetwork extends IPSModule
                             $trustedDhcp = $JSONData[ 'dhcpGuarding' ][ 'trustedDhcpServerIpAddresses' ] ?? [];
                             $this->SetValue( 'NetworkTrustedDHCP', is_array( $trustedDhcp ) ? implode( ', ', $trustedDhcp ) : (string) $trustedDhcp );
                             if ($type=="GATEWAY") {
-                                $this->MaintainVariable('HostIpAddress',$this->Translate('Host IP Address'),3,['ICON' => 'network-wired','DECIMAL_SEPARATOR' => 'Client','COLOR' => -1,'MIN' => 0,'DIGITS' => 2,'MAX' => 100,'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}','INTERVALS' => '[]','INTERVALS_ACTIVE' => false,'MULTILINE' => false,'OPTIONS' => '[]','PERCENTAGE' => false,'PREFIX' => '','SUFFIX' => '','THOUSANDS_SEPARATOR' => '','USAGE_TYPE' => 0],150,1);
+                                $this->MaintainVariable('HostIpAddress',$this->Translate('Host IP Address'),3,['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'USAGE_TYPE' => 0,'ICON' => 'network-wired'],150,1);
                                 $this->SetValue( 'HostIpAddress', (isset($JSONData[ 'ipv4Configuration' ]['hostIpAddress']) ? $JSONData[ 'ipv4Configuration' ]['hostIpAddress'] : '') );
-                                $this->MaintainVariable('AutoScaleNetwork',$this->Translate('Auto scale network'),0,['ICON' => 'shield-halved','DECIMAL_SEPARATOR' => 'Client','COLOR' => -1,'MIN' => 0,'DIGITS' => 0,'MAX' => 100,'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}','OPTIONS' => json_encode( [
+                                $this->MaintainVariable('AutoScaleNetwork',$this->Translate('Auto scale network'),0,['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'USAGE_TYPE' => 0,'ICON' => 'shield-halved','OPTIONS' => json_encode( [
                                     [ 'Caption'=> $this->Translate( 'Inactive' ), 'ColorActive'=> true, 'ColorValue'=> self::COLOR_RED, 'ContentColorActive'=> false, 'ContentColorValue'=> -1, 'IconActive'=> true, 'IconValue'=> 'wifi-slash', 'Value'=> false ],
                                     [ 'Caption'=> $this->Translate( 'Active' ), 'ColorActive'=> true, 'ColorValue'=> self::COLOR_GREEN, 'ContentColorActive'=> false, 'ContentColorValue'=> -1, 'IconActive'=> false, 'IconValue'=> '', 'Value'=> true ]
-                                ] ),'INTERVALS_ACTIVE' => false,'MULTILINE' => false,'PERCENTAGE' => false,'PREFIX' => '','SUFFIX' => '','THOUSANDS_SEPARATOR' => '','USAGE_TYPE' => 0],151,1);
+                                ] )],151,1);
                                 $this->SetValue( 'AutoScaleNetwork', (isset($JSONData[ 'ipv4Configuration' ]['autoScaleEnabled']) ? $JSONData[ 'ipv4Configuration' ]['autoScaleEnabled'] : false) );
 
                                 
                                 $mode = (isset($JSONData[ 'ipv4Configuration' ]['dhcpConfiguration']['mode']) ? $JSONData[ 'ipv4Configuration' ]['dhcpConfiguration']['mode'] : '');
-                                $this->MaintainVariable('NetworkMode',$this->Translate('Mode'),3,['ICON' => 'network-wired','DECIMAL_SEPARATOR' => 'Client','COLOR' => -1,'MIN' => 0,'DIGITS' => 2,'MAX' => 100,'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}','INTERVALS' => '[]','INTERVALS_ACTIVE' => false,'MULTILINE' => false,'OPTIONS' => '[]','PERCENTAGE' => false,'PREFIX' => '','SUFFIX' => '','THOUSANDS_SEPARATOR' => '','USAGE_TYPE' => 0],155,1);
+                                $this->MaintainVariable('NetworkMode',$this->Translate('Mode'),3,['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'USAGE_TYPE' => 0,'ICON' => 'network-wired'],155,1);
                                 if ($mode=="SERVER")
                                 {
                                     $this->SetValue( 'NetworkMode', 'DHCP Server' );
@@ -133,27 +133,14 @@ class UnifiNetwork extends IPSModule
 			$this->Translate('Type'),
 			3,
 			[
+				'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+				'USAGE_TYPE' => 0,
 				'ICON' => 'network-wired',
-				'DECIMAL_SEPARATOR' => 'Client',
-				'COLOR' => -1,
-				'CONTENT_COLOR' => -1,
-				'DIGITS' => 2,
-				'MIN' => 0,				
-				'MAX' => 100,
-				'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}',
-				'INTERVALS' => '[]',
-				'INTERVALS_ACTIVE' => true,
-    				'OPTIONS' => json_encode( [
+				'OPTIONS' => json_encode( [
 					[ 'Caption'=> $this->Translate( 'Unmanaged' ), 'ColorActive'=> false, 'ColorValue'=> -1, 'ContentColorActive'=> false, 'ContentColorValue'=> -1, 'IconActive'=> false, 'IconValue'=> '', 'Value'=> 'UNMANAGED' ],
 					[ 'Caption'=> $this->Translate( 'Gateway' ), 'ColorActive'=> false, 'ColorValue'=> -1, 'ContentColorActive'=> false, 'ContentColorValue'=> -1, 'IconActive'=> false, 'IconValue'=> '', 'Value'=> 'GATEWAY' ],
 					[ 'Caption'=> $this->Translate( 'Switch' ), 'ColorActive'=> false, 'ColorValue'=> -1, 'ContentColorActive'=> false, 'ContentColorValue'=> -1, 'IconActive'=> false, 'IconValue'=> '', 'Value'=> 'SWITCH' ]
-				] ),
-				'MULTILINE' => false,
-				'PERCENTAGE' => false,
-				'PREFIX' => '',
-				'SUFFIX' => '',
-				'THOUSANDS_SEPARATOR' => '',
-				'USAGE_TYPE' => 0
+				] )
 			],
 			$vpos++,
 			1
@@ -163,24 +150,13 @@ class UnifiNetwork extends IPSModule
 			$this->Translate('Enabled'),
 			0,
 			[
+				'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+				'USAGE_TYPE' => 0,
 				'ICON' => 'network-wired',
-				'DECIMAL_SEPARATOR' => 'Client',
-				'COLOR' => -1,
-				'MIN' => 0,
-				'DIGITS' => 0,
-				'MAX' => 100,
-				'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}',
 				'OPTIONS' => json_encode( [
 					[ 'Caption'=> $this->Translate( 'Inactive' ), 'ColorActive'=> true, 'ColorValue'=> self::COLOR_RED, 'ContentColorActive'=> false, 'ContentColorValue'=> -1, 'IconActive'=> true, 'IconValue'=> 'cloud-slash', 'Value'=> false ],
 					[ 'Caption'=> $this->Translate( 'Active' ), 'ColorActive'=> true, 'ColorValue'=> self::COLOR_GREEN, 'ContentColorActive'=> false, 'ContentColorValue'=> -1, 'IconActive'=> false, 'IconValue'=> '', 'Value'=> true ]
-				] ),
-				'INTERVALS_ACTIVE' => false,
-				'MULTILINE' => false,
-				'PERCENTAGE' => false,
-				'PREFIX' => '',
-				'SUFFIX' => '',
-				'THOUSANDS_SEPARATOR' => '',
-				'USAGE_TYPE' => 0
+				] )
 			],
 			$vpos++,
 			1
@@ -191,21 +167,9 @@ class UnifiNetwork extends IPSModule
 			$this->Translate('VLAN'),
 			1,
 			[
-				'ICON' => 'diagram-project',
-				'DECIMAL_SEPARATOR' => '',
-				'COLOR' => -1,
-				'MIN' => 0,
-				'DIGITS' => 0,
-				'MAX' => 6,
-				'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}',
-				'OPTIONS' => '',
-				'INTERVALS_ACTIVE' => false,
-				'MULTILINE' => false,
-				'PERCENTAGE' => false,
-				'PREFIX' => '',
-				'SUFFIX' => '',
-				'THOUSANDS_SEPARATOR' => '',
-				'USAGE_TYPE' => 0
+				'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+				'USAGE_TYPE' => 0,
+				'ICON' => 'diagram-project'
 			],
 			$vpos++,
 			1
@@ -215,22 +179,9 @@ class UnifiNetwork extends IPSModule
 			$this->Translate('Trusted DHCP'),
 			3,
             [
-				'ICON' => 'shield-halved',
-				'DECIMAL_SEPARATOR' => 'Client',
-				'COLOR' => -1,
-				'MIN' => 0,
-				'DIGITS' => 2,
-				'MAX' => 100,
-				'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}',
-				'INTERVALS' => '[]',
-				'INTERVALS_ACTIVE' => false,
-				'MULTILINE' => false,
-				'OPTIONS' => '[]',
-				'PERCENTAGE' => false,
-				'PREFIX' => '',
-				'SUFFIX' => '',
-				'THOUSANDS_SEPARATOR' => '',
-				'USAGE_TYPE' => 0
+				'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+				'USAGE_TYPE' => 0,
+				'ICON' => 'shield-halved'
 			],
 			$vpos++,
 			1

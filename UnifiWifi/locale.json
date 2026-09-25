@@ -29,7 +29,9 @@
             "WPA2 + WPA3 Personal": "WPA2 + WPA3 Personal",
             "WPA2 Enterprise": "WPA2 Enterprise",
             "WPA3 Enterprise": "WPA3 Enterprise",
-            "WPA2 + WPA3 Enterprise": "WPA2 + WPA3 Enterprise"
+            "WPA2 + WPA3 Enterprise": "WPA2 + WPA3 Enterprise",
+            "Standard": "Standard",
+            "IoT-Optimized": "IoT-optimiert"
         }
     }
 }

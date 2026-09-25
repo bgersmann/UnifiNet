@@ -128,21 +128,15 @@ class UnifiWifi extends IPSModule
 			$this->Translate('Type'),
 			3,
 			[
+				'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+				'USAGE_TYPE' => 0,
 				'ICON' => 'circle-info',
-				'DECIMAL_SEPARATOR' => '',
-				'COLOR' => -1,
-				'MIN' => 0,
-				'DIGITS' => 0,
-				'MAX' => 1,
-				'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}',
-				'INTERVALS' => '[{"IntervalMinValue":0,"IntervalMaxValue":0,"ConstantActive":true,"ConstantValue":"Standard","ConversionFactor":1,"PrefixActive":false,"PrefixValue":"","SuffixActive":false,"SuffixValue":"","DigitsActive":false,"DigitsValue":0,"IconActive":false,"IconValue":"","ColorActive":false,"ColorValue":-1,"ColorDisplay":-1},{"IntervalMinValue":1,"IntervalMaxValue":1,"ConstantActive":true,"ConstantValue":"IOT-Optimized","ConversionFactor":1,"PrefixActive":false,"PrefixValue":"","SuffixActive":false,"SuffixValue":"","DigitsActive":false,"DigitsValue":0,"IconActive":false,"IconValue":"","ColorActive":false,"ColorValue":-1,"ColorDisplay":-1}]',
-				'INTERVALS_ACTIVE' => true,
-				'MULTILINE' => false,
-				'PERCENTAGE' => false,
-				'PREFIX' => '',
-				'SUFFIX' => '',
-				'THOUSANDS_SEPARATOR' => '',
-				'USAGE_TYPE' => 0
+				'OPTIONS' => json_encode( array_map( function ( $option ) {
+					return [ 'Caption'=> $this->Translate( $option[ 1 ] ), 'ColorActive'=> false, 'ColorValue'=> -1, 'ContentColorActive'=> false, 'ContentColorValue'=> -1, 'IconActive'=> false, 'IconValue'=> '', 'Value'=> $option[ 0 ] ];
+				}, [
+					[ 'STANDARD', 'Standard' ],
+					[ 'IOT_OPTIMIZED', 'IoT-Optimized' ]
+				] ) )
 			],
 			$vpos++,
 			1
@@ -152,24 +146,13 @@ class UnifiWifi extends IPSModule
 			$this->Translate('Active'),
 			0,
 			[
+				'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+				'USAGE_TYPE' => 0,
 				'ICON' => 'shield-halved',
-				'DECIMAL_SEPARATOR' => 'Client',
-				'COLOR' => -1,
-				'MIN' => 0,
-				'DIGITS' => 0,
-				'MAX' => 100,
-				'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}',
 				'OPTIONS' => json_encode( [
 					[ 'Caption'=> $this->Translate( 'Inactive' ), 'ColorActive'=> true, 'ColorValue'=> self::COLOR_RED, 'ContentColorActive'=> false, 'ContentColorValue'=> -1, 'IconActive'=> true, 'IconValue'=> 'wifi-slash', 'Value'=> false ],
 					[ 'Caption'=> $this->Translate( 'Active' ), 'ColorActive'=> true, 'ColorValue'=> self::COLOR_GREEN, 'ContentColorActive'=> false, 'ContentColorValue'=> -1, 'IconActive'=> false, 'IconValue'=> '', 'Value'=> true ]
-				] ),
-				'INTERVALS_ACTIVE' => false,
-				'MULTILINE' => false,
-				'PERCENTAGE' => false,
-				'PREFIX' => '',
-				'SUFFIX' => '',
-				'THOUSANDS_SEPARATOR' => '',
-				'USAGE_TYPE' => 0
+				] )
 			],
 			$vpos++,
 			1
@@ -180,13 +163,9 @@ class UnifiWifi extends IPSModule
 			$this->Translate('Security'),
 			3,
 			[
+				'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+				'USAGE_TYPE' => 0,
 				'ICON' => 'shield-halved',
-				'DECIMAL_SEPARATOR' => '',
-				'COLOR' => -1,
-				'MIN' => 0,
-				'DIGITS' => 0,
-				'MAX' => 6,
-				'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}',
 				'OPTIONS' => json_encode( array_map( function ( $option ) {
 					return [ 'Caption'=> $this->Translate( $option[ 1 ] ), 'ColorActive'=> false, 'ColorValue'=> -1, 'ContentColorActive'=> false, 'ContentColorValue'=> -1, 'IconActive'=> false, 'IconValue'=> '', 'Value'=> $option[ 0 ] ];
 				}, [
@@ -197,14 +176,7 @@ class UnifiWifi extends IPSModule
 					[ 'WPA2_ENTERPRISE', 'WPA2 Enterprise' ],
 					[ 'WPA3_ENTERPRISE', 'WPA3 Enterprise' ],
 					[ 'WPA2_WPA3_ENTERPRISE', 'WPA2 + WPA3 Enterprise' ]
-				] ) ),
-				'INTERVALS_ACTIVE' => true,
-				'MULTILINE' => false,
-				'PERCENTAGE' => false,
-				'PREFIX' => '',
-				'SUFFIX' => '',
-				'THOUSANDS_SEPARATOR' => '',
-				'USAGE_TYPE' => 0
+				] ) )
 			],
 			$vpos++,
 			1
@@ -214,13 +186,9 @@ class UnifiWifi extends IPSModule
 			$this->Translate('Frequencies'),
 			3,
             [
+				'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+				'USAGE_TYPE' => 0,
 				'ICON' => 'wifi',
-				'DECIMAL_SEPARATOR' => 'Client',
-				'COLOR' => -1,
-				'MIN' => 0,
-				'DIGITS' => 0,
-				'MAX' => 100,
-				'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}',
 				'OPTIONS' => json_encode( array_map( function ( $option ) {
 					return [ 'Caption'=> $this->Translate( $option[ 1 ] ), 'ColorActive'=> false, 'ColorValue'=> -1, 'ContentColorActive'=> false, 'ContentColorValue'=> -1, 'IconActive'=> false, 'IconValue'=> '', 'Value'=> $option[ 0 ] ];
 				}, [
@@ -231,14 +199,7 @@ class UnifiWifi extends IPSModule
 					[ '2.4|6', '2.4 + 6 GHz' ],
 					[ '5|6', '5 + 6 GHz' ],
 					[ '2.4|5|6', '2.4 + 5 + 6 GHz' ]
-				] ) ),
-			    'INTERVALS_ACTIVE' => false,
-				'MULTILINE' => false,
-				'PERCENTAGE' => false,
-				'PREFIX' => '',
-				'SUFFIX' => ' GHz',
-				'THOUSANDS_SEPARATOR' => '',
-				'USAGE_TYPE' => 0
+				] ) )
 			],
 			$vpos++,
 			1
