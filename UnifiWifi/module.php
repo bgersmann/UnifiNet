@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 // CLASS UnifiWifi
 class UnifiWifi extends IPSModule
-{   
+{
+    private const COLOR_GREEN = 1692672;
+    private const COLOR_RED = 16077123;
+
     public function Create()
     {
         //Never delete this line!
@@ -89,8 +92,8 @@ class UnifiWifi extends IPSModule
 				$this->Send('getWifis','');
 			}	
 			$arrayStatus = array();
-			$arrayStatus[] = array( 'code' => 102, 'icon' => 'active', 'caption' => 'Instanz ist aktiv' );
-			$arrayStatus[] = array( 'code' => 600, 'icon' => 'inactive', 'caption' => 'UniFi Network Version zu alt. Erst ab 10+ verfügbar' );
+			$arrayStatus[] = array( 'code' => 102, 'icon' => 'active', 'caption' => 'Instance is active' );
+			$arrayStatus[] = array( 'code' => 600, 'icon' => 'error', 'caption' => 'UniFi Network version is too old. Requires version 10 or newer.' );
 			$arrayElements = array();
 			$arrayElements[] = array( 'type' => 'Label', 'bold' => true, 'label' => $this->Translate('UniFi Wifi Controller'));
 			$arrayElements[] = array( 'type' => 'Label', 'label' => $this->Translate('Set Timer to activate instance. The instance will then automatically collect data from the device at the specified interval.')); 
@@ -98,7 +101,7 @@ class UnifiWifi extends IPSModule
 
 			$Bufferdata = $this->GetBuffer("Wifis");
 			if ($Bufferdata=="") {
-				$arrayOptions[] = array( 'caption' => 'Test', 'value' => '' );
+				$arrayOptions[] = array( 'caption' => $this->Translate('Please load the data first'), 'value' => '' );
 			} else {
 				$arrayOptions=json_decode($Bufferdata);
 			}
@@ -146,7 +149,7 @@ class UnifiWifi extends IPSModule
 		);
 		$this->MaintainVariable(
 			'WifiEnabled',
-			$this->Translate('Aktiv'),
+			$this->Translate('Active'),
 			0,
 			[
 				'ICON' => 'shield-halved',
@@ -156,7 +159,10 @@ class UnifiWifi extends IPSModule
 				'DIGITS' => 0,
 				'MAX' => 100,
 				'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}',
-				'OPTIONS' => '[{"ColorDisplay":16077123,"Value":false,"Caption":"Inaktiv","IconValue":"wifi-slash","IconActive":true,"ColorActive":true,"ColorValue":16077123,"Color":-1},{"ColorDisplay":1692672,"Value":true,"Caption":"Aktiv","IconValue":"","IconActive":false,"ColorActive":true,"ColorValue":1692672,"Color":-1}]',
+				'OPTIONS' => json_encode( [
+					[ 'ColorDisplay'=> self::COLOR_RED, 'Value'=> false, 'Caption'=> $this->Translate( 'Inactive' ), 'IconValue'=> 'wifi-slash', 'IconActive'=> true, 'ColorActive'=> true, 'ColorValue'=> self::COLOR_RED, 'Color'=> -1 ],
+					[ 'ColorDisplay'=> self::COLOR_GREEN, 'Value'=> true, 'Caption'=> $this->Translate( 'Active' ), 'IconValue'=> '', 'IconActive'=> false, 'ColorActive'=> true, 'ColorValue'=> self::COLOR_GREEN, 'Color'=> -1 ]
+				] ),
 				'INTERVALS_ACTIVE' => false,
 				'MULTILINE' => false,
 				'PERCENTAGE' => false,
@@ -181,7 +187,17 @@ class UnifiWifi extends IPSModule
 				'DIGITS' => 0,
 				'MAX' => 6,
 				'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}',
-				'OPTIONS' => '[{"Value":"OPEN","Caption":"Offen","IconActive":false,"IconValue":"","ColorActive":false,"ColorValue":-1,"Color":-1,"ColorDisplay":-1},{"Value":"WPA2_PERSONAL","Caption":"WPA2 Personal","IconActive":false,"IconValue":"","ColorActive":false,"ColorValue":-1,"Color":-1,"ColorDisplay":-1},{"Value":"WPA3_PERSONAL","Caption":"WPA3 Personal","IconActive":false,"IconValue":"","ColorActive":false,"ColorValue":-1,"Color":-1,"ColorDisplay":-1},{"Value":"WPA2_WPA3_PERSONAL","Caption":"WPA2+WPA3 Personal","IconActive":false,"IconValue":"","ColorActive":false,"ColorValue":-1,"Color":-1,"ColorDisplay":-1},{"Value":"WPA2_ENTERPRISE","Caption":"WPA2 Enterprise","IconActive":false,"IconValue":"","ColorActive":false,"ColorValue":-1,"Color":-1,"ColorDisplay":-1},{"Value":"WPA3_ENTERPRISE","Caption":"WPA3 Enterprise","IconActive":false,"IconValue":"","ColorActive":false,"ColorValue":-1,"Color":-1,"ColorDisplay":-1},{"Value":"WPA2_WPA3_ENTERPRISE","Caption":"WPA2 + WPA3 Enterprise","IconActive":false,"IconValue":"","ColorActive":false,"ColorValue":-1,"Color":-1,"ColorDisplay":-1}]',
+				'OPTIONS' => json_encode( array_map( function ( $option ) {
+					return [ 'Value'=> $option[ 0 ], 'Caption'=> $this->Translate( $option[ 1 ] ), 'IconActive'=> false, 'IconValue'=> '', 'ColorActive'=> false, 'ColorValue'=> -1, 'Color'=> -1, 'ColorDisplay'=> -1 ];
+				}, [
+					[ 'OPEN', 'Open' ],
+					[ 'WPA2_PERSONAL', 'WPA2 Personal' ],
+					[ 'WPA3_PERSONAL', 'WPA3 Personal' ],
+					[ 'WPA2_WPA3_PERSONAL', 'WPA2 + WPA3 Personal' ],
+					[ 'WPA2_ENTERPRISE', 'WPA2 Enterprise' ],
+					[ 'WPA3_ENTERPRISE', 'WPA3 Enterprise' ],
+					[ 'WPA2_WPA3_ENTERPRISE', 'WPA2 + WPA3 Enterprise' ]
+				] ) ),
 				'INTERVALS_ACTIVE' => true,
 				'MULTILINE' => false,
 				'PERCENTAGE' => false,
@@ -205,7 +221,17 @@ class UnifiWifi extends IPSModule
 				'DIGITS' => 0,
 				'MAX' => 100,
 				'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}',
-				'OPTIONS' => '[{"Value":"2.4","Caption":"2,4 GHz","IconActive":false,"IconValue":"","ColorActive":false,"ColorValue":-1,"Color":-1,"ColorDisplay":-1},{"Value":"5","Caption":"5 GHz","IconActive":false,"IconValue":"","ColorActive":false,"ColorValue":-1,"Color":-1,"ColorDisplay":-1},{"Value":"6","Caption":"6 GHz","IconActive":false,"IconValue":"","ColorActive":false,"ColorValue":-1,"Color":-1,"ColorDisplay":-1},{"Value":"2.4|5","Caption":"2,4 + 5 GHz","IconActive":false,"IconValue":"","ColorActive":false,"ColorValue":-1,"Color":-1,"ColorDisplay":-1},{"Value":"2.4|6","Caption":"2,4 + 6 GHz","IconActive":false,"IconValue":"","ColorActive":false,"ColorValue":-1,"Color":-1,"ColorDisplay":-1},{"Value":"5|6","Caption":"5 + 6 GHz","IconActive":false,"IconValue":"","ColorActive":false,"ColorValue":-1,"Color":-1,"ColorDisplay":-1},{"Value":"2.4|5|6","Caption":"2,4 + 5 + 6 GHz","IconActive":false,"IconValue":"","ColorActive":false,"ColorValue":-1,"Color":-1,"ColorDisplay":-1}]',
+				'OPTIONS' => json_encode( array_map( function ( $option ) {
+					return [ 'Value'=> $option[ 0 ], 'Caption'=> $this->Translate( $option[ 1 ] ), 'IconActive'=> false, 'IconValue'=> '', 'ColorActive'=> false, 'ColorValue'=> -1, 'Color'=> -1, 'ColorDisplay'=> -1 ];
+				}, [
+					[ '2.4', '2.4 GHz' ],
+					[ '5', '5 GHz' ],
+					[ '6', '6 GHz' ],
+					[ '2.4|5', '2.4 + 5 GHz' ],
+					[ '2.4|6', '2.4 + 6 GHz' ],
+					[ '5|6', '5 + 6 GHz' ],
+					[ '2.4|5|6', '2.4 + 5 + 6 GHz' ]
+				] ) ),
 			    'INTERVALS_ACTIVE' => false,
 				'MULTILINE' => false,
 				'PERCENTAGE' => false,
@@ -235,7 +261,6 @@ class UnifiWifi extends IPSModule
     {
         // Debug output
         $this->SendDebug(__FUNCTION__, $ident . ' => ' . $value, 0);
-        // TODO: Replace identifier
         switch ($ident) {
             case 'WifiEnabled':
 				$jsonPayload = $this->buildWifiUpdateJson($value);

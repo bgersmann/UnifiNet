@@ -2,7 +2,11 @@
     "translations": {
         "de": {
             "UniFi Device Configurator": "UniFi Geräte Konfigurator",
-            "UnifiDevices": "Unifi Geräte"
+            "Unifi Devices": "Unifi Geräte",
+            "Type": "Typ",
+            "Get Devices": "Geräte abrufen",
+            "Instance is active": "Instanz ist aktiv",
+            "Please load the data first": "Bitte zuerst die Daten abrufen"
         }
     }
 }

@@ -1,5 +1,7 @@
 # UnifiConfigurator
-Beschreibung des Moduls.
+
+Listet alle UniFi Geräte und Endgeräte der ausgewählten Site auf und legt daraus
+mit einem Klick die passenden UnifiDevice- bzw. UnifiClient-Instanzen an.
 
 ### Inhaltsverzeichnis
 
@@ -8,20 +10,23 @@ Beschreibung des Moduls.
 3. [Software-Installation](#3-software-installation)
 4. [Einrichten der Instanzen in IP-Symcon](#4-einrichten-der-instanzen-in-ip-symcon)
 5. [Statusvariablen und Profile](#5-statusvariablen-und-profile)
-6. [WebFront](#6-webfront)
+6. [Visualisierung](#6-visualisierung)
 7. [PHP-Befehlsreferenz](#7-php-befehlsreferenz)
 
 ### 1. Funktionsumfang
 
-* Zeigt alle Geräte und Clients der Unifi Site da und ermöglicht ein schneller erstellen als eigene Instanzen.
+* Zeigt alle Geräte und Endgeräte der UniFi Site an
+* Erlaubt das Anlegen der zugehörigen Instanzen direkt aus der Liste
 
 ### 2. Voraussetzungen
 
 - IP-Symcon ab Version 8.0
+- Eine konfigurierte [UnifiGateway](../UnifiGateway)-Instanz
 
 ### 3. Software-Installation
 
 * Über den Module Store das 'UnifiNet'-Modul installieren.
+* Alternativ über das Module Control folgende URL hinzufügen: `https://github.com/bgersmann/UnifiNet`
 
 ### 4. Einrichten der Instanzen in IP-Symcon
 
@@ -32,24 +37,31 @@ __Konfigurationsseite__:
 
 Name     | Beschreibung
 -------- | ------------------
-Unifi Devices | Zeigt alle Unifi Geräte und Clients an.
+Unifi Geräte | Zeigt alle UniFi Geräte und Endgeräte der Site an und legt die gewählten als Instanz an.
 
 ### 5. Statusvariablen und Profile
 
-Die Statusvariablen/Kategorien werden automatisch angelegt. Das Löschen einzelner kann zu Fehlfunktionen führen.
-
 #### Statusvariablen
 
-Keine vorhanden
+Keine vorhanden.
 
 #### Profile
 
-Keine vorhanden
+Keine vorhanden.
 
 ### 6. Visualisierung
 
-Keine vorhanden
+Keine vorhanden.
 
 ### 7. PHP-Befehlsreferenz
 
-Keine vorhanden
+```php
+void UNIFICG_Send(integer $InstanzID, string $Api);
+```
+Liest die Geräteliste erneut aus dem Gateway. Wird von der Schaltfläche der
+Konfigurationsseite verwendet. Möglicher Wert für `$Api`: `getDevicesConfig`.
+
+Beispiel:
+```php
+UNIFICG_Send(12345, 'getDevicesConfig');
+```

@@ -5,6 +5,9 @@ declare(strict_types=1);
 // CLASS UnifiNetwork
 class UnifiNetwork extends IPSModule
 {
+    private const COLOR_GREEN = 1692672;
+    private const COLOR_RED = 16077123;
+
     /**
      * In contrast to Construct, this function is called only once when creating the instance and starting IP-Symcon.
      * Therefore, status variables and module properties which the module requires permanently should be created here.
@@ -61,11 +64,15 @@ class UnifiNetwork extends IPSModule
 							$this->SetValue( 'NetworkEnabled',  (( isset($JSONData[ 'enabled' ]) ) ? $JSONData[ 'enabled' ] : false)  );
 							$this->SetValue( 'NetworkType', $type );   
                             $this->SetValue( 'NetworkVlan', (( isset($JSONData[ 'vlanId']) ) ? $JSONData[ 'vlanId'] : 0) );
-                            $this->SetValue( 'NetworkTrustedDHCP', (( isset($JSONData[ 'dhcpGuarding']['trustedDhcpServerIpAddresses'] ) ) ? $JSONData[ 'dhcpGuarding']['trustedDhcpServerIpAddresses'] : false) );
+                            $trustedDhcp = $JSONData[ 'dhcpGuarding' ][ 'trustedDhcpServerIpAddresses' ] ?? [];
+                            $this->SetValue( 'NetworkTrustedDHCP', is_array( $trustedDhcp ) ? implode( ', ', $trustedDhcp ) : (string) $trustedDhcp );
                             if ($type=="GATEWAY") {
-                                $this->MaintainVariable('HostIpAddress',$this->Translate('Host IP Adresse'),3,['ICON' => 'network-wired','DECIMAL_SEPARATOR' => 'Client','COLOR' => -1,'MIN' => 0,'DIGITS' => 2,'MAX' => 100,'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}','INTERVALS' => '[]','INTERVALS_ACTIVE' => false,'MULTILINE' => false,'OPTIONS' => '[]','PERCENTAGE' => false,'PREFIX' => '','SUFFIX' => '','THOUSANDS_SEPARATOR' => '','USAGE_TYPE' => 0],150,1);
+                                $this->MaintainVariable('HostIpAddress',$this->Translate('Host IP Address'),3,['ICON' => 'network-wired','DECIMAL_SEPARATOR' => 'Client','COLOR' => -1,'MIN' => 0,'DIGITS' => 2,'MAX' => 100,'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}','INTERVALS' => '[]','INTERVALS_ACTIVE' => false,'MULTILINE' => false,'OPTIONS' => '[]','PERCENTAGE' => false,'PREFIX' => '','SUFFIX' => '','THOUSANDS_SEPARATOR' => '','USAGE_TYPE' => 0],150,1);
                                 $this->SetValue( 'HostIpAddress', (isset($JSONData[ 'ipv4Configuration' ]['hostIpAddress']) ? $JSONData[ 'ipv4Configuration' ]['hostIpAddress'] : '') );
-                                $this->MaintainVariable('AutoScaleNetwork',$this->Translate('Auto scale network'),0,['ICON' => 'shield-halved','DECIMAL_SEPARATOR' => 'Client','COLOR' => -1,'MIN' => 0,'DIGITS' => 0,'MAX' => 100,'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}','OPTIONS' => '[{"ColorDisplay":16077123,"Value":false,"Caption":"Inaktiv","IconValue":"wifi-slash","IconActive":true,"ColorActive":true,"ColorValue":16077123,"Color":-1},{"ColorDisplay":1692672,"Value":true,"Caption":"Aktiv","IconValue":"","IconActive":false,"ColorActive":true,"ColorValue":1692672,"Color":-1}]','INTERVALS_ACTIVE' => false,'MULTILINE' => false,'PERCENTAGE' => false,'PREFIX' => '','SUFFIX' => '','THOUSANDS_SEPARATOR' => '','USAGE_TYPE' => 0],151,1);
+                                $this->MaintainVariable('AutoScaleNetwork',$this->Translate('Auto scale network'),0,['ICON' => 'shield-halved','DECIMAL_SEPARATOR' => 'Client','COLOR' => -1,'MIN' => 0,'DIGITS' => 0,'MAX' => 100,'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}','OPTIONS' => json_encode( [
+                                    [ 'ColorDisplay'=> self::COLOR_RED, 'Value'=> false, 'Caption'=> $this->Translate( 'Inactive' ), 'IconValue'=> 'wifi-slash', 'IconActive'=> true, 'ColorActive'=> true, 'ColorValue'=> self::COLOR_RED, 'Color'=> -1 ],
+                                    [ 'ColorDisplay'=> self::COLOR_GREEN, 'Value'=> true, 'Caption'=> $this->Translate( 'Active' ), 'IconValue'=> '', 'IconActive'=> false, 'ColorActive'=> true, 'ColorValue'=> self::COLOR_GREEN, 'Color'=> -1 ]
+                                ] ),'INTERVALS_ACTIVE' => false,'MULTILINE' => false,'PERCENTAGE' => false,'PREFIX' => '','SUFFIX' => '','THOUSANDS_SEPARATOR' => '','USAGE_TYPE' => 0],151,1);
                                 $this->SetValue( 'AutoScaleNetwork', (isset($JSONData[ 'ipv4Configuration' ]['autoScaleEnabled']) ? $JSONData[ 'ipv4Configuration' ]['autoScaleEnabled'] : false) );
 
                                 
@@ -91,8 +98,8 @@ class UnifiNetwork extends IPSModule
 				$this->Send('getNetworks','');
 			}	
 			$arrayStatus = array();
-			$arrayStatus[] = array( 'code' => 102, 'icon' => 'active', 'caption' => 'Instanz ist aktiv' );
-			$arrayStatus[] = array( 'code' => 600, 'icon' => 'inactive', 'caption' => 'UniFi Network Version zu alt. Erst ab 10+ verfügbar' );
+			$arrayStatus[] = array( 'code' => 102, 'icon' => 'active', 'caption' => 'Instance is active' );
+			$arrayStatus[] = array( 'code' => 600, 'icon' => 'error', 'caption' => 'UniFi Network version is too old. Requires version 10 or newer.' );
 			
 			$arrayElements = array();
 			$arrayElements[] = array( 'type' => 'Label', 'bold' => true, 'label' => $this->Translate('UniFi Network Controller'));
@@ -101,7 +108,7 @@ class UnifiNetwork extends IPSModule
 
 			$Bufferdata = $this->GetBuffer("Networks");
 			if ($Bufferdata=="") {
-				$arrayOptions[] = array( 'caption' => 'Test', 'value' => '' );
+				$arrayOptions[] = array( 'caption' => $this->Translate('Please load the data first'), 'value' => '' );
 			} else {
 				$arrayOptions=json_decode($Bufferdata);
 			}
@@ -136,7 +143,11 @@ class UnifiNetwork extends IPSModule
 				'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}',
 				'INTERVALS' => '[]',
 				'INTERVALS_ACTIVE' => true,
-                'OPTIONS' => '[{"Value":"UNMANAGED","Caption":"Unmanaged","IconActive":false,"IconValue":"","ColorActive":false,"ColorValue":-1,"Color":-1,"ColorDisplay":-1},{"Value":"GATEWAY","Caption":"Gateway","IconActive":false,"IconValue":"","ColorActive":false,"ColorValue":-1,"Color":-1,"ColorDisplay":-1},{"Value":"SWITCH","Caption":"Switch","IconActive":false,"IconValue":"","ColorActive":false,"ColorValue":-1,"Color":-1,"ColorDisplay":-1}]',
+    				'OPTIONS' => json_encode( [
+					[ 'Value'=> 'UNMANAGED', 'Caption'=> $this->Translate( 'Unmanaged' ), 'IconActive'=> false, 'IconValue'=> '', 'ColorActive'=> false, 'ColorValue'=> -1, 'Color'=> -1, 'ColorDisplay'=> -1 ],
+					[ 'Value'=> 'GATEWAY', 'Caption'=> $this->Translate( 'Gateway' ), 'IconActive'=> false, 'IconValue'=> '', 'ColorActive'=> false, 'ColorValue'=> -1, 'Color'=> -1, 'ColorDisplay'=> -1 ],
+					[ 'Value'=> 'SWITCH', 'Caption'=> $this->Translate( 'Switch' ), 'IconActive'=> false, 'IconValue'=> '', 'ColorActive'=> false, 'ColorValue'=> -1, 'Color'=> -1, 'ColorDisplay'=> -1 ]
+				] ),
 				'MULTILINE' => false,
 				'PERCENTAGE' => false,
 				'PREFIX' => '',
@@ -159,7 +170,10 @@ class UnifiNetwork extends IPSModule
 				'DIGITS' => 0,
 				'MAX' => 100,
 				'PRESENTATION' => '{3319437D-7CDE-699D-750A-3C6A3841FA75}',
-				'OPTIONS' => '[{"ColorDisplay":16077123,"Value":false,"Caption":"Inaktiv","IconValue":"cloud-slash","IconActive":true,"ColorActive":true,"ColorValue":16077123,"Color":-1},{"ColorDisplay":1692672,"Value":true,"Caption":"Aktiv","IconValue":"","IconActive":false,"ColorActive":true,"ColorValue":1692672,"Color":-1}]',
+				'OPTIONS' => json_encode( [
+					[ 'ColorDisplay'=> self::COLOR_RED, 'Value'=> false, 'Caption'=> $this->Translate( 'Inactive' ), 'IconValue'=> 'cloud-slash', 'IconActive'=> true, 'ColorActive'=> true, 'ColorValue'=> self::COLOR_RED, 'Color'=> -1 ],
+					[ 'ColorDisplay'=> self::COLOR_GREEN, 'Value'=> true, 'Caption'=> $this->Translate( 'Active' ), 'IconValue'=> '', 'IconActive'=> false, 'ColorActive'=> true, 'ColorValue'=> self::COLOR_GREEN, 'Color'=> -1 ]
+				] ),
 				'INTERVALS_ACTIVE' => false,
 				'MULTILINE' => false,
 				'PERCENTAGE' => false,
@@ -241,11 +255,9 @@ class UnifiNetwork extends IPSModule
     {
         // Debug output
         $this->SendDebug(__FUNCTION__, $ident . ' => ' . $value, 0);
-        // TODO: Replace identifier
+        // Switching a network on or off is deliberately not implemented: the API rejects the
+        // update with "invalid VLAN ID" or "invalid IP configuration" even for unchanged payloads.
         switch ($ident) {
-            case 'NetworkEnabledXXX':
-				//Gibt nur fehler zurük das VLAN ID ungültig sei oder IP Konfiguration ungültig...
-                break;
             default:
                 $this->SendDebug(__FUNCTION__, 'There was no reaction to the action.', 0);
         }

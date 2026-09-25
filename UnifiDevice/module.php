@@ -6,6 +6,7 @@ declare(strict_types=1);
         private const COLOR_YELLOW = 16776960;
         private const COLOR_GREEN = 1692672;
         private const COLOR_RED = 16077123;
+        private const COLOR_UPDATE = 16711680;
 		public function Create()
 		{
 			//Never delete this line!
@@ -39,18 +40,24 @@ declare(strict_types=1);
 			$this->MaintainVariable( 'DeviceModel', $this->Translate( 'Device Model' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, 1 );
 			$this->MaintainVariable( 'DeviceIP', $this->Translate( 'Device IP' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, 1 );
 			$this->MaintainVariable( 'Firmware', $this->Translate( 'Firmware' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, 1 );
-			$this->MaintainVariable( 'FirmwareUpdate', $this->Translate( 'FirmwareUpdate' ), 0, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON'=> 'circle-info', 'OPTIONS'=>'[{"ColorDisplay":1692672,"Value":false,"Caption":"Aktuell","IconValue":"","IconActive":false,"ColorActive":true,"ColorValue":1692672,"Color":-1},{"ColorDisplay":16711680,"Value":true,"Caption":"Update Verfügbar","IconValue":"","IconActive":false,"ColorActive":true,"ColorValue":16711680,"Color":-1}]' ], $vpos++, 1 );
+			$this->MaintainVariable( 'FirmwareUpdate', $this->Translate( 'Firmware Update' ), 0, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON'=> 'circle-info', 'OPTIONS'=> json_encode( [
+				[ 'ColorDisplay'=> self::COLOR_GREEN, 'Value'=> false, 'Caption'=> $this->Translate( 'Up to date' ), 'IconValue'=> '', 'IconActive'=> false, 'ColorActive'=> true, 'ColorValue'=> self::COLOR_GREEN, 'Color'=> -1 ],
+				[ 'ColorDisplay'=> self::COLOR_UPDATE, 'Value'=> true, 'Caption'=> $this->Translate( 'Update available' ), 'IconValue'=> '', 'IconActive'=> false, 'ColorActive'=> true, 'ColorValue'=> self::COLOR_UPDATE, 'Color'=> -1 ]
+			] ) ], $vpos++, 1 );
 						
 			$variablenID=@$this->GetIDForIdent("UptimeSec");
 			if ($variablenID==false) {
-				$variablenID = $this->RegisterVariableInteger('UptimeSec', $this->Translate( 'UptimeSec' ), [ 'PRESENTATION' => VARIABLE_PRESENTATION_DURATION, 'FORMAT'=> 2],$vpos++);
+				$variablenID = $this->RegisterVariableInteger('UptimeSec', $this->Translate( 'Uptime' ), [ 'PRESENTATION' => VARIABLE_PRESENTATION_DURATION, 'FORMAT'=> 2],$vpos++);
 				IPS_SetIcon($variablenID,'circle-info');
 			} else {
 				$vpos++;
 			}
-			$this->MaintainVariable( 'UplinkTX', $this->Translate( 'UplinkTX' ), 2, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'DIGITS'=> 3 , 'SUFFIX'=> 'Mbit/s' , 'ICON'=> 'network-wired'] , $vpos++, 1 );
-			$this->MaintainVariable( 'UplinkRX', $this->Translate( 'UplinkRX' ), 2, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'DIGITS'=> 3 , 'SUFFIX'=> 'Mbit/s' , 'ICON'=> 'network-wired'], $vpos++, 1 );
-			$this->MaintainVariable( 'Online', $this->Translate( 'Online' ), 0, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON'=> 'network-wired','OPTIONS'=>'[{"ColorDisplay":16077123,"Value":false,"Caption":"Offline","IconValue":"","IconActive":false,"ColorActive":true,"ColorValue":16077123,"Color":-1},{"ColorDisplay":1692672,"Value":true,"Caption":"Online","IconValue":"","IconActive":false,"ColorActive":true,"ColorValue":1692672,"Color":-1}]'], $vpos++, 1 );
+			$this->MaintainVariable( 'UplinkTX', $this->Translate( 'Uplink TX' ), 2, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'DIGITS'=> 3 , 'SUFFIX'=> 'Mbit/s' , 'ICON'=> 'network-wired'] , $vpos++, 1 );
+			$this->MaintainVariable( 'UplinkRX', $this->Translate( 'Uplink RX' ), 2, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'DIGITS'=> 3 , 'SUFFIX'=> 'Mbit/s' , 'ICON'=> 'network-wired'], $vpos++, 1 );
+			$this->MaintainVariable( 'Online', $this->Translate( 'Online' ), 0, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON'=> 'network-wired','OPTIONS'=> json_encode( [
+				[ 'ColorDisplay'=> self::COLOR_RED, 'Value'=> false, 'Caption'=> $this->Translate( 'Offline' ), 'IconValue'=> '', 'IconActive'=> false, 'ColorActive'=> true, 'ColorValue'=> self::COLOR_RED, 'Color'=> -1 ],
+				[ 'ColorDisplay'=> self::COLOR_GREEN, 'Value'=> true, 'Caption'=> $this->Translate( 'Online' ), 'IconValue'=> '', 'IconActive'=> false, 'ColorActive'=> true, 'ColorValue'=> self::COLOR_GREEN, 'Color'=> -1 ]
+			] )], $vpos++, 1 );
 			$this->MaintainVariable( 'UplinkDevice', $this->Translate( 'Uplink Device' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, 1 );
 
 			$this->MaintainVariable( 'CPU', $this->Translate( 'CPU Utilization' ), 2, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'DIGITS'=> 2 , 'SUFFIX'=> ' %' , 'ICON'=> 'laptop-binary'], $vpos++, $this->ReadPropertyBoolean("Utilization") );
@@ -159,7 +166,7 @@ declare(strict_types=1);
 												$colSymbol=self::COLOR_RED; //rot
 											}
 
-											$this->MaintainVariable( 'Port_'.$port[ 'idx' ], $this->Translate( 'Port '.$port[ 'idx' ].($port['connector']== 'RJ45' ? '' : '-'.$port['connector'])), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'COLOR'=>$colSymbol,'ICON'=>'ethernet'], $vpos++, $this->ReadPropertyBoolean("PortsAnzeigen") );
+											$this->MaintainVariable( 'Port_'.$port[ 'idx' ], $this->Translate( 'Port' ).' '.$port[ 'idx' ].($port['connector']== 'RJ45' ? '' : '-'.$port['connector']), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'COLOR'=>$colSymbol,'ICON'=>'ethernet'], $vpos++, $this->ReadPropertyBoolean("PortsAnzeigen") );
 											$PortText='';
 											if (isset($port[ 'speedMbps' ]) && $port[ 'state' ]== 'UP') {
 												if ($port[ 'speedMbps' ]>=1000) {
@@ -179,7 +186,7 @@ declare(strict_types=1);
 													$colSymbol=self::COLOR_RED;
 													$poe=$port[ 'poe' ]['state'];
 												}
-												$this->MaintainVariable( 'Port_'.$port[ 'idx' ].'POE', $this->Translate( 'Port '.$port[ 'idx' ].'-POE' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'COLOR'=>$colSymbol,'ICON'=>'ethernet'], $vpos++, $this->ReadPropertyBoolean("PortsAnzeigen") );
+												$this->MaintainVariable( 'Port_'.$port[ 'idx' ].'POE', $this->Translate( 'Port' ).' '.$port[ 'idx' ].'-POE', 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'COLOR'=>$colSymbol,'ICON'=>'ethernet'], $vpos++, $this->ReadPropertyBoolean("PortsAnzeigen") );
 												if ($this->ReadPropertyBoolean("PortsAnzeigen")) {
 													$this->SetValue( 'Port_'.$port[ 'idx' ].'POE', $poe);
 												}
@@ -205,7 +212,7 @@ declare(strict_types=1);
 												$colSymbol=16077123; //rot
 												$radioTxt=$radio[ 'wlanStandard'];
 											}
-											$this->MaintainVariable( 'Port_'.$vpos, $this->Translate( 'WLAN '.$radio[ 'frequencyGHz' ].'GHz'), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'COLOR'=>$colSymbol,'ICON'=>'wifi'], $vpos, $this->ReadPropertyBoolean("RadiosAnzeigen") );
+											$this->MaintainVariable( 'Port_'.$vpos, $this->Translate( 'WLAN' ).' '.$radio[ 'frequencyGHz' ].' GHz', 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'COLOR'=>$colSymbol,'ICON'=>'wifi'], $vpos, $this->ReadPropertyBoolean("RadiosAnzeigen") );
 											if ($this->ReadPropertyBoolean("RadiosAnzeigen")) {
 												$this->SetValue( 'Port_'.$vpos, $radioTxt );
 											}											
@@ -225,13 +232,11 @@ declare(strict_types=1);
 						break;
 					case "setPortCycle":
 						$data=unserialize($data);
-						$this->SendDebug('UnifiDV', 'PortyCycle: '.$data, 0);
-						echo($data);
+						$this->SendDebug('UnifiDV', 'PortCycle: '.$data, 0);
 						break;
 					case "setRestartDevice":
 						$data=unserialize($data);
 						$this->SendDebug('UnifiDV', 'RestartDevice: '.$data, 0);
-						echo($data);
 						break;
 
 				}			
@@ -248,7 +253,7 @@ declare(strict_types=1);
 		public function RestartDevice()
 		{
 			if ($this->HasActiveParent()) {
-				$this->Send('setRestartDevice');			
+				$this->Send('setRestartDevice','');
 			}
 		}
 
@@ -257,7 +262,7 @@ declare(strict_types=1);
 				$this->Send('getDevices','');
 			}	
 			$arrayStatus = array();
-			$arrayStatus[] = array( 'code' => 102, 'icon' => 'active', 'caption' => 'Instanz ist aktiv' );
+			$arrayStatus[] = array( 'code' => 102, 'icon' => 'active', 'caption' => 'Instance is active' );
 
 			$arrayElements = array();
 			$arrayElements[] = array( 'type' => 'Label', 'bold' => true, 'label' => $this->Translate('UniFi Device'));
@@ -266,7 +271,7 @@ declare(strict_types=1);
 
 			$Bufferdata = $this->GetBuffer("devices");
 			if ($Bufferdata=="") {
-				$arrayOptions[] = array( 'caption' => 'Test', 'value' => '' );
+				$arrayOptions[] = array( 'caption' => $this->Translate('Please load the data first'), 'value' => '' );
 			} else {
 				$arrayOptions=json_decode($Bufferdata);
 			}
@@ -280,7 +285,7 @@ declare(strict_types=1);
 			$arrayOptions[] = array( 'type' => 'CheckBox', 'name' => 'IDAnzeigen', 'width' => '220px','caption' => $this->Translate('Show ID') );
 			$arrayOptions[] = array( 'type' => 'CheckBox', 'name' => 'ConnectedClientsAnzeigen', 'width' => '220px','caption' => $this->Translate('Show Connected Clients') );
 			$arrayElements[] = array( 'type' => 'RowLayout',  'items' => $arrayOptions );
-			$arrayElements[] = array( 'type' => 'CheckBox', 'name' => 'Utilization', 'caption' => $this->Translate('Utilization Statistics auslesen (CPU + Memory)') );
+			$arrayElements[] = array( 'type' => 'CheckBox', 'name' => 'Utilization', 'caption' => $this->Translate('Read utilization statistics (CPU + memory)') );
 
 			$arrayActions = array();
 			unset($arrayOptions);

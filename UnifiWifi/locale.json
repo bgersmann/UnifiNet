@@ -1,26 +1,35 @@
 {
     "translations": {
-        "en": {
-            "UniFi Wifi Controller": "UniFi Wifi Controller",
-            "Set Timer to activate instance. The instance will then automatically collect data from the device at the specified interval.": "Set Timer to activate instance. The instance will then automatically collect data from the device at the specified interval.",
-            "Get Wifis": "Get Wifis",
-            "Get Wifi Details": "Get Wifi Details",
-            "Name": "Name",
-            "Type": "Type",
-            "Aktiv": "Active",
-            "Security": "Security",
-            "Frequencies": "Frequencies"
-        },
         "de": {
-            "UniFi Wifi Controller": "UniFi Wifi Controller",
-            "Set Timer to activate instance. The instance will then automatically collect data from the device at the specified interval.": "Timer setzen, um die Instanz zu aktivieren. Danach sammelt sie die Daten des Geraets automatisch im angegebenen Intervall.",
-            "Get Wifis": "WLANs abrufen",
-            "Get Wifi Details": "WLAN-Details abrufen",
+            "UniFi Wifi Controller": "UniFi WLAN Controller",
+            "Set Timer to activate instance. The instance will then automatically collect data from the device at the specified interval.": "Timer einstellen, um die Instanz zu aktivieren. Die Instanz sammelt dann automatisch Daten vom Gerät im festgelegten Intervall.",
+            "Timer (s) -> 0=Off": "Timer (s) -> 0=Aus",
+            "Wifi ID": "WLAN ID",
             "Name": "Name",
             "Type": "Typ",
-            "Aktiv": "Aktiv",
+            "Active": "Aktiv",
+            "Inactive": "Inaktiv",
             "Security": "Sicherheit",
-            "Frequencies": "Frequenzen"
+            "Frequencies": "Frequenzen",
+            "Open": "Offen",
+            "2.4 GHz": "2,4 GHz",
+            "5 GHz": "5 GHz",
+            "6 GHz": "6 GHz",
+            "2.4 + 5 GHz": "2,4 + 5 GHz",
+            "2.4 + 6 GHz": "2,4 + 6 GHz",
+            "5 + 6 GHz": "5 + 6 GHz",
+            "2.4 + 5 + 6 GHz": "2,4 + 5 + 6 GHz",
+            "Get Wifis": "WLANs abrufen",
+            "Get Wifi Details": "WLAN-Details abrufen",
+            "Instance is active": "Instanz ist aktiv",
+            "UniFi Network version is too old. Requires version 10 or newer.": "UniFi Network Version zu alt. Erst ab Version 10 verfügbar.",
+            "Please load the data first": "Bitte zuerst die Daten abrufen",
+            "WPA2 Personal": "WPA2 Personal",
+            "WPA3 Personal": "WPA3 Personal",
+            "WPA2 + WPA3 Personal": "WPA2 + WPA3 Personal",
+            "WPA2 Enterprise": "WPA2 Enterprise",
+            "WPA3 Enterprise": "WPA3 Enterprise",
+            "WPA2 + WPA3 Enterprise": "WPA2 + WPA3 Enterprise"
         }
     }
 }

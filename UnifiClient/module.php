@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 class UnifiClient extends IPSModule
 {
+    private const COLOR_GREEN = 1692672;
+    private const COLOR_RED = 16077123;
+
     public function Create()
     {
         //Never delete this line!
@@ -39,7 +42,10 @@ class UnifiClient extends IPSModule
 			} else {
 				$vpos++;
 			}
-			$this->MaintainVariable( 'Online', $this->Translate( 'Online' ), 0, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON'=> 'network-wired','OPTIONS'=>'[{"ColorDisplay":16077123,"Value":false,"Caption":"Offline","IconValue":"","IconActive":false,"ColorActive":true,"ColorValue":16077123,"Color":-1},{"ColorDisplay":1692672,"Value":true,"Caption":"Online","IconValue":"","IconActive":false,"ColorActive":true,"ColorValue":1692672,"Color":-1}]'], $vpos++, 1 );
+			$this->MaintainVariable( 'Online', $this->Translate( 'Online' ), 0, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON'=> 'network-wired','OPTIONS'=> json_encode( [
+				[ 'ColorDisplay'=> self::COLOR_RED, 'Value'=> false, 'Caption'=> $this->Translate( 'Offline' ), 'IconValue'=> '', 'IconActive'=> false, 'ColorActive'=> true, 'ColorValue'=> self::COLOR_RED, 'Color'=> -1 ],
+				[ 'ColorDisplay'=> self::COLOR_GREEN, 'Value'=> true, 'Caption'=> $this->Translate( 'Online' ), 'IconValue'=> '', 'IconActive'=> false, 'ColorActive'=> true, 'ColorValue'=> self::COLOR_GREEN, 'Color'=> -1 ]
+			] )], $vpos++, 1 );
 			$this->MaintainVariable( 'UplinkDevice', $this->Translate( 'Uplink Device' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, 1 );
 			$this->MaintainVariable( 'MAC', $this->Translate( 'Client MAC' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, $this->ReadPropertyBoolean("MACAnzeigen") );
 			$TimerMS = $this->ReadPropertyInteger( 'Timer' ) * 1000;
@@ -83,12 +89,12 @@ class UnifiClient extends IPSModule
 								$this->SendDebug("UnifiCL", "Device Offline: " . json_encode($array), 0);
 								$this->SetValue( 'Online', false );
 								$this->SetValue( 'UplinkDevice', '-');
-							} else if ($array[ 'statusCode' ]== 404) {
+							} else {
 								// instance inactive
-								$this->SendDebug("UnifiCL", "Device Not Found: " . json_encode($array), 0);
+								$this->SendDebug("UnifiCL", "Request failed: " . json_encode($array), 0);
 								$this->SetValue( 'Online', false );
 								$this->SetValue( 'UplinkDevice', '-');
-								$this->SetStatus( $JSONData[ 'statusCode' ] );
+								$this->SetStatus( $array[ 'statusCode' ] );
 							}
 						}	
 
@@ -131,8 +137,13 @@ class UnifiClient extends IPSModule
 				$this->Send("getClients",'');
 			}			
 			$arrayStatus = array();
-			$arrayStatus[] = array( 'code' => 102, 'icon' => 'active', 'caption' => 'Instanz ist aktiv' );
-			$arrayStatus[] = array( 'code' => 500, 'icon' => 'active', 'caption' => 'Instanz ist fehlerhaft: Server Error' );
+			$arrayStatus[] = array( 'code' => 102, 'icon' => 'active', 'caption' => 'Instance is active' );
+			$arrayStatus[] = array( 'code' => 400, 'icon' => 'error', 'caption' => 'Instance is faulty: Bad Request' );
+			$arrayStatus[] = array( 'code' => 401, 'icon' => 'error', 'caption' => 'Instance is faulty: Unauthorized' );
+			$arrayStatus[] = array( 'code' => 403, 'icon' => 'error', 'caption' => 'Instance is faulty: Forbidden' );
+			$arrayStatus[] = array( 'code' => 429, 'icon' => 'error', 'caption' => 'Instance is faulty: Rate Limit' );
+			$arrayStatus[] = array( 'code' => 500, 'icon' => 'error', 'caption' => 'Instance is faulty: Server Error' );
+			$arrayStatus[] = array( 'code' => 502, 'icon' => 'error', 'caption' => 'Instance is faulty: Bad Gateway' );
 
 			$arrayElements = array();
 			$arrayElements[] = array( 'type' => 'Label', 'bold' => true, 'label' => $this->Translate('UniFi Client') );
@@ -141,7 +152,7 @@ class UnifiClient extends IPSModule
 			$arrayElements[] = array( 'type' => 'NumberSpinner', 'name' => 'Timer', 'caption' => 'Timer (s) -> 0=Off' );
 			$Bufferdata = $this->GetBuffer("clients");
 			if ($Bufferdata=="") {
-				$arrayOptions[] = array( 'caption' => 'Test', 'value' => '' );
+				$arrayOptions[] = array( 'caption' => $this->Translate('Please load the data first'), 'value' => '' );
 			} else {
 				$arrayOptions=json_decode($Bufferdata);
 			}

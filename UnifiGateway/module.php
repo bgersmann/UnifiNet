@@ -4,6 +4,9 @@ declare( strict_types = 1 );
 
 class UnifiGateway extends IPSModule
 {
+    private const CONNECT_TIMEOUT = 5;
+    private const REQUEST_TIMEOUT = 15;
+
     public function Create()
     {
         //Never delete this line!
@@ -172,32 +175,32 @@ class UnifiGateway extends IPSModule
         }
         $arrayStatus = array();
 
-        $arrayStatus[] = array( 'code' => 102, 'icon' => 'active', 'caption' => 'Instanz ist aktiv' );
-        $arrayStatus[] = array( 'code' => 201, 'icon' => 'inactive', 'caption' => 'Instanz ist fehlerhaft: Fehler Datenabfrage' );
-        $arrayStatus[] = array( 'code' => 400, 'icon' => 'inactive', 'caption' => 'Instanz ist fehlerhaft: Bad Request' );
-        $arrayStatus[] = array( 'code' => 401, 'icon' => 'inactive', 'caption' => 'Instanz ist fehlerhaft: Unauthorized' );
-        $arrayStatus[] = array( 'code' => 403, 'icon' => 'inactive', 'caption' => 'Instanz ist fehlerhaft: Forbidden' );
-        $arrayStatus[] = array( 'code' => 404, 'icon' => 'inactive', 'caption' => 'Instanz ist fehlerhaft: Not Found' );
-        $arrayStatus[] = array( 'code' => 429, 'icon' => 'inactive', 'caption' => 'Instanz ist fehlerhaft: Rate Limit' );
-        $arrayStatus[] = array( 'code' => 500, 'icon' => 'inactive', 'caption' => 'Instanz ist fehlerhaft: Server Error' );
-        $arrayStatus[] = array( 'code' => 502, 'icon' => 'inactive', 'caption' => 'Instanz ist fehlerhaft: Bad Gateway' );
+        $arrayStatus[] = array( 'code' => 102, 'icon' => 'active', 'caption' => 'Instance is active' );
+        $arrayStatus[] = array( 'code' => 201, 'icon' => 'error', 'caption' => 'Instance is faulty: Data request failed' );
+        $arrayStatus[] = array( 'code' => 400, 'icon' => 'error', 'caption' => 'Instance is faulty: Bad Request' );
+        $arrayStatus[] = array( 'code' => 401, 'icon' => 'error', 'caption' => 'Instance is faulty: Unauthorized' );
+        $arrayStatus[] = array( 'code' => 403, 'icon' => 'error', 'caption' => 'Instance is faulty: Forbidden' );
+        $arrayStatus[] = array( 'code' => 404, 'icon' => 'error', 'caption' => 'Instance is faulty: Not Found' );
+        $arrayStatus[] = array( 'code' => 429, 'icon' => 'error', 'caption' => 'Instance is faulty: Rate Limit' );
+        $arrayStatus[] = array( 'code' => 500, 'icon' => 'error', 'caption' => 'Instance is faulty: Server Error' );
+        $arrayStatus[] = array( 'code' => 502, 'icon' => 'error', 'caption' => 'Instance is faulty: Bad Gateway' );
 
         $arraySort = array();
         #$arraySort = array( 'column' => 'DeviceName', 'direction' => 'ascending' );
 
         $arrayElements = array();
         $arrayElements[] = array( 'type' => 'Label','bold' => true, 'label' => $this->Translate('UniFi Device Gateway'));
-        $arrayElements[] = array( 'type' => 'Label', 'label' => 'Bitte API Key unter "UniFi Network > Settings > Control Plane > Integrations" erzeugen');
+        $arrayElements[] = array( 'type' => 'Label', 'label' => $this->Translate('Please create an API key under "UniFi Network > Settings > Control Plane > Integrations".'));
         $arrayElements[] = array( 'type' => 'ValidationTextBox', 'name' => 'ServerAddress', 'caption' => 'Unifi Device IP', 'validate' => "^(([a-zA-Z0-9\\.\\-\\_]+(\\.[a-zA-Z]{2,3})+)|(\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b))$" );
-        $arrayElements[] = array( 'type' => 'ValidationTextBox', 'name' => 'APIKey', 'caption' => 'APIKey' );
+        $arrayElements[] = array( 'type' => 'PasswordTextBox', 'name' => 'APIKey', 'caption' => 'API Key' );
         $arrayElements[] = array( 'type' => 'CheckBox', 'name' => 'applicationVersion', 'caption' => $this->Translate('Show Application Version') );
         $arrayElements[] = array( 'type' => 'Select', 'name' => 'Site', 'caption' => 'Site', 'options' => $arrayOptions );
 
-        if ( !empty( $APIKey && $this->GetStatus() === 102)) {
+        if ( !empty( $APIKey ) && $this->GetStatus() === 102 ) {
             if ($this->ReadPropertyBoolean("applicationVersion")) {
                  $this->SetValue('applicationVersion', $this->getNetworkVersion());
             }
-            $arrayElements[] = array( 'type' => 'Label', 'label' => $this->Translate('Network Application Version: ').$this->getNetworkVersion() );           
+            $arrayElements[] = array( 'type' => 'Label', 'label' => $this->Translate('Network Application Version:').' '.$this->getNetworkVersion() );
         } else {
             $arrayElements[] = array( 'type' => 'Label', 'label' => $this->Translate('Network Application Version: not found') );
         }
@@ -218,21 +221,28 @@ class UnifiGateway extends IPSModule
         curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, false );
         curl_setopt( $ch, CURLOPT_SSL_VERIFYHOST, false );
         curl_setopt( $ch, CURLOPT_HTTPHEADER, array( 'X-API-KEY:'.$APIKey ) );
-        curl_setopt( $ch, CURLOPT_SSLVERSION, 'CURL_SSLVERSION_TLSv1' );
+        curl_setopt( $ch, CURLOPT_CONNECTTIMEOUT, self::CONNECT_TIMEOUT );
+        curl_setopt( $ch, CURLOPT_TIMEOUT, self::REQUEST_TIMEOUT );
         $RawData = curl_exec( $ch );
-        curl_close( $ch );
         if ($RawData === false) {
             // Handle error
             $this->SendDebug("UnifiGW", "Curl error: " . curl_error($ch), 0);
+            curl_close( $ch );
             $this->SetStatus( 201 ); // Set status to error
             return [];
         }
+        curl_close( $ch );
         $JSONData = json_decode( $RawData, true );
+        if ( !is_array( $JSONData ) ) {
+            $this->SendDebug("UnifiGW", "Invalid JSON response: " . substr( (string) $RawData, 0, 500 ), 0);
+            $this->SetStatus( 201 ); // Set status to error
+            return [];
+        }
         if ( isset( $JSONData[ 'statusCode' ] ) ) {
             if ($JSONData[ 'statusCode' ]<> 200 && $JSONData[ 'statusCode' ]<> 404 && $JSONData[ 'statusCode' ]<> 500) {
                 // instance inactive
 			    $this->SetStatus( $JSONData[ 'statusCode' ] );
-            }        
+            }
         }
         return $JSONData;
     }
@@ -253,17 +263,19 @@ class UnifiGateway extends IPSModule
 			curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, false );
 			curl_setopt( $ch, CURLOPT_SSL_VERIFYHOST, false );
 			curl_setopt( $ch, CURLOPT_HTTPHEADER, array( 'X-API-KEY:'.$APIKey, 'Content-Type: application/json' ));
-			curl_setopt( $ch, CURLOPT_SSLVERSION, 'CURL_SSLVERSION_TLSv1' );
+			curl_setopt( $ch, CURLOPT_CONNECTTIMEOUT, self::CONNECT_TIMEOUT );
+			curl_setopt( $ch, CURLOPT_TIMEOUT, self::REQUEST_TIMEOUT );
 			$RawData = curl_exec( $ch );
-			curl_close( $ch );
 			if ($RawData === false) {
 				// Handle error
 				$this->SendDebug("UnifiGW", "Curl error: " . curl_error($ch), 0);
+				curl_close( $ch );
 				$this->SetStatus( 201 ); // Set status to error
 				return [];
 			}
+			curl_close( $ch );
 			$JSONData = json_decode( $RawData, true );
-			if ( isset( $JSONData[ 'statusCode' ] ) ) {
+			if ( is_array( $JSONData ) && isset( $JSONData[ 'statusCode' ] ) ) {
 				if ($JSONData[ 'statusCode' ]<> 200) {
 					// instance inactive
                     $this->SendDebug("UnifiGW", "Curl error: " . json_encode($JSONData), 0);
@@ -292,17 +304,19 @@ class UnifiGateway extends IPSModule
             curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, false );
             curl_setopt( $ch, CURLOPT_SSL_VERIFYHOST, false );
             curl_setopt( $ch, CURLOPT_HTTPHEADER, array( 'X-API-KEY:'.$APIKey, 'Content-Type: application/json' ));
-            curl_setopt( $ch, CURLOPT_SSLVERSION, 'CURL_SSLVERSION_TLSv1' );
+            curl_setopt( $ch, CURLOPT_CONNECTTIMEOUT, self::CONNECT_TIMEOUT );
+            curl_setopt( $ch, CURLOPT_TIMEOUT, self::REQUEST_TIMEOUT );
             $RawData = curl_exec( $ch );
-            curl_close( $ch );
             if ($RawData === false) {
                 // Handle error
                 $this->SendDebug("UnifiGW", "Curl error: " . curl_error($ch), 0);
+                curl_close( $ch );
                 $this->SetStatus( 201 ); // Set status to error
                 return [];
             }
+            curl_close( $ch );
             $JSONData = json_decode( $RawData, true );
-            if ( isset( $JSONData[ 'statusCode' ] ) ) {
+            if ( is_array( $JSONData ) && isset( $JSONData[ 'statusCode' ] ) ) {
                 if ($JSONData[ 'statusCode' ]<> 200) {
                     // instance inactive
                     $this->SendDebug("UnifiGW", "Curl error: " . json_encode($JSONData), 0);
@@ -332,7 +346,7 @@ class UnifiGateway extends IPSModule
                     // instance inactive
                     $this->SetStatus( $JSONData['error']['code'] );
                     $value[] = [
-                        'caption'=>'errror',
+                        'caption'=>$this->Translate('Error loading data'),
                         'value'=> 'default'
                     ];
                     return $value;
@@ -368,7 +382,7 @@ class UnifiGateway extends IPSModule
                     // instance inactive
                     $this->SetStatus( $JSONData['error']['code'] );
                     $value[] = [
-                        'caption'=>'errror',
+                        'caption'=>$this->Translate('Error loading data'),
                         'value'=> 'default'
                     ];
                     return $value;
@@ -458,23 +472,30 @@ class UnifiGateway extends IPSModule
         curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, false );
         curl_setopt( $ch, CURLOPT_SSL_VERIFYHOST, false );
         curl_setopt( $ch, CURLOPT_HTTPHEADER, array( 'X-API-KEY:'.$APIKey ) );
-        curl_setopt( $ch, CURLOPT_SSLVERSION, 'CURL_SSLVERSION_TLSv1' );
+        curl_setopt( $ch, CURLOPT_CONNECTTIMEOUT, self::CONNECT_TIMEOUT );
+        curl_setopt( $ch, CURLOPT_TIMEOUT, self::REQUEST_TIMEOUT );
         $RawData = curl_exec( $ch );
-        curl_close( $ch );
         if ($RawData === false) {
             // Handle error
             $this->SendDebug("UnifiGW", "Curl error: " . curl_error($ch), 0);
+            curl_close( $ch );
             $this->SetStatus( 201 ); // Set status to error
             return '';
         }
+        curl_close( $ch );
         $JSONData = json_decode( $RawData, true );
+        if ( !is_array( $JSONData ) ) {
+            $this->SendDebug("UnifiGW", "Invalid JSON response: " . substr( (string) $RawData, 0, 500 ), 0);
+            $this->SetStatus( 201 ); // Set status to error
+            return '';
+        }
         $this->SendDebug("UnifiGW", json_encode($JSONData), 0);
-        if ( isset( $array[ 'statusCode' ] ) ) {
-            if ($array[ 'statusCode' ]<> 200) {
+        if ( isset( $JSONData[ 'statusCode' ] ) ) {
+            if ($JSONData[ 'statusCode' ]<> 200) {
                 // instance inactive
-			    $this->SetStatus( $array[ 'statusCode' ] );
-                return '';               
-            }       
+			    $this->SetStatus( $JSONData[ 'statusCode' ] );
+                return '';
+            }
         }
         if (isset($JSONData['applicationVersion']) && !empty($JSONData['applicationVersion'])) {
             // instance active

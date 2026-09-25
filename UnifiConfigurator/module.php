@@ -53,30 +53,30 @@ declare(strict_types=1);
 			$arrayOptions[] = array( 'caption' => 'default', 'value' => 'default' );
 			
 			$arrayStatus = array();
-			$arrayStatus[] = array( 'code' => 102, 'icon' => 'active', 'caption' => 'Instanz ist aktiv' );
+			$arrayStatus[] = array( 'code' => 102, 'icon' => 'active', 'caption' => 'Instance is active' );
 
 			$arraySort = array();
 			#$arraySort = array( 'column' => 'Name', 'direction' => 'ascending' );
 
 			$arrayColumns = array();
 			$arrayColumns[] = array( 'caption' => 'Name', 'name' => 'Name', 'width' => 'auto', 'add' => '' );
-			$arrayColumns[] = array( 'caption' => 'Typ', 'name' => 'Type', 'width' => '200px', 'add' => '' );
+			$arrayColumns[] = array( 'caption' => 'Type', 'name' => 'Type', 'width' => '200px', 'add' => '' );
 			$arrayColumns[] = array( 'caption' => 'IP', 'name' => 'IP', 'width' => '200px', 'add' => '' );
 			$arrayColumns[] = array( 'caption' => 'ID', 'name' => 'ID', 'width' => '300px', 'add' => '' );
 			$arrayValues = array();
 
 			$Bufferdata = $this->GetBuffer("configurator");
 			if ($Bufferdata=="") {
-				$arrayValues[] = array( 'caption' => 'Test', 'value' => '' );
+				$arrayValues[] = array( 'caption' => $this->Translate('Please load the data first'), 'value' => '' );
 			} else {
 				$arrayValues=json_decode($Bufferdata);
 			}
 			$arrayElements = array();
 			$arrayElements[] = array( 'type' => 'Label', 'label' => $this->Translate('UniFi Device Configurator'));
-			$arrayElements[] = array( 'type' => 'Configurator', 'name' => $this->Translate('UnifiDevices'), 'caption' => 'Unifi Devices', 'rowCount' => 10, 'delete' => false, 'sort' => $arraySort, 'columns' => $arrayColumns, 'values' => $arrayValues );
+			$arrayElements[] = array( 'type' => 'Configurator', 'name' => 'UnifiDevices', 'caption' => 'Unifi Devices', 'rowCount' => 10, 'delete' => false, 'sort' => $arraySort, 'columns' => $arrayColumns, 'values' => $arrayValues );
 
 			$arrayActions = array();
-			$arrayActions[] = array( 'type' => 'Button', 'label' => 'Geräte auslesen', 'onClick' => 'UNIFICG_Send($id,"getDevicesConfig");');
+			$arrayActions[] = array( 'type' => 'Button', 'label' => $this->Translate('Get Devices'), 'onClick' => 'UNIFICG_Send($id,"getDevicesConfig");');
 
 			return JSON_encode( array( 'status' => $arrayStatus, 'elements' => $arrayElements, 'actions' => $arrayActions ) );
 

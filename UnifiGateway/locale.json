@@ -1,12 +1,25 @@
 {
     "translations": {
         "de": {
-            "Application Version": "Anwendungsversion",
             "UniFi Device Gateway": "UniFi Gateway",
+            "Please create an API key under \"UniFi Network > Settings > Control Plane > Integrations\".": "Bitte einen API-Key unter \"UniFi Network > Settings > Control Plane > Integrations\" erzeugen.",
+            "Unifi Device IP": "Unifi Geräte-IP",
+            "API Key": "API-Key",
+            "Site": "Site",
+            "Application Version": "Anwendungsversion",
+            "Show Application Version": "Anwendungsversion anzeigen",
             "Network Application Version:": "Netzwerkanwendungsversion:",
             "Network Application Version: not found": "Netzwerkanwendungsversion: nicht gefunden",
-            "Show Application Version": "Anwendungsversion anzeigen"
-
+            "Instance is active": "Instanz ist aktiv",
+            "Instance is faulty: Data request failed": "Instanz ist fehlerhaft: Fehler bei der Datenabfrage",
+            "Instance is faulty: Bad Request": "Instanz ist fehlerhaft: Ungültige Anfrage",
+            "Instance is faulty: Unauthorized": "Instanz ist fehlerhaft: Nicht autorisiert",
+            "Instance is faulty: Forbidden": "Instanz ist fehlerhaft: Zugriff verweigert",
+            "Instance is faulty: Not Found": "Instanz ist fehlerhaft: Nicht gefunden",
+            "Instance is faulty: Rate Limit": "Instanz ist fehlerhaft: Anfragelimit erreicht",
+            "Instance is faulty: Server Error": "Instanz ist fehlerhaft: Server-Fehler",
+            "Instance is faulty: Bad Gateway": "Instanz ist fehlerhaft: Bad Gateway",
+            "Error loading data": "Fehler beim Laden der Daten"
         }
     }
 }
