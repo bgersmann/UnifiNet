@@ -2,17 +2,21 @@
 
 declare(strict_types=1);
 
-class UnifiClient extends IPSModule
+class UnifiClient extends IPSModuleStrict
 {
     private const COLOR_GREEN = 1692672;
     private const COLOR_RED = 16077123;
 
-    public function Create()
+    public function GetCompatibleParents(): string
+    {
+        return json_encode([ 'type' => 'connect', 'moduleIDs' => [ '{A792D3EC-FEC5-A8E6-F792-E141097C6AB0}' ] ]);
+    }
+
+    public function Create(): void
     {
         //Never delete this line!
         parent::Create();
 
-        $this->ConnectParent('{A792D3EC-FEC5-A8E6-F792-E141097C6AB0}');
         $this->RegisterPropertyString('ID', '');
         $this->RegisterPropertyInteger('Timer', 0);
 		$this->RegisterPropertyBoolean("MACAnzeigen", 0);
@@ -20,13 +24,13 @@ class UnifiClient extends IPSModule
         $this->RegisterTimer('Collect Data', 0, "UNIFICL_Send(\$_IPS['TARGET'],'getClientData','');");
     }
 
-    public function Destroy()
+    public function Destroy(): void
     {
         //Never delete this line!
         parent::Destroy();
     }
 
-		public function ApplyChanges()
+		public function ApplyChanges(): void
 		{
 			//Never delete this line!
 			parent::ApplyChanges();
@@ -35,10 +39,11 @@ class UnifiClient extends IPSModule
 			$this->MaintainVariable( 'ID', $this->Translate( 'Client ID' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, $this->ReadPropertyBoolean("IDAnzeigen") );
 			$this->MaintainVariable( 'ClientType', $this->Translate( 'Client Type' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, 1 );
 			$this->MaintainVariable( 'ClientIP', $this->Translate( 'Client IP' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, 1 );
-			$variablenID=@$this->GetIDForIdent("ConnectedAt");
-			if ($variablenID==false) {
-				$variablenID = $this->RegisterVariableInteger('ConnectedAt', $this->Translate( 'Connected At' ), [ 'PRESENTATION' => VARIABLE_PRESENTATION_DATE_TIME],$vpos++);
-				IPS_SetIcon($variablenID,'circle-info');
+			// The date/time presentation has no ICON parameter, so the icon is set on the object.
+			// RegisterVariableInteger does not return the variable ID, hence GetIDForIdent afterwards.
+			if (@$this->GetIDForIdent("ConnectedAt") == false) {
+				$this->RegisterVariableInteger('ConnectedAt', $this->Translate( 'Connected At' ), [ 'PRESENTATION' => VARIABLE_PRESENTATION_DATE_TIME],$vpos++);
+				IPS_SetIcon($this->GetIDForIdent("ConnectedAt"),'circle-info');
 			} else {
 				$vpos++;
 			}
@@ -61,8 +66,8 @@ class UnifiClient extends IPSModule
 			}
 		}
 
-		public function Send(string $api, string $param1)
-		{	
+		public function Send(string $api, string $param1): void
+		{
 			if ($this->HasActiveParent()) {
 				$data=$this->SendDataToParent(json_encode(['DataID' => '{4A5538F1-1C38-198A-3144-D806E0DADF87}',
 					'Api' => $api,
@@ -132,7 +137,7 @@ class UnifiClient extends IPSModule
 			}			
 		}
 
-		public function GetConfigurationForm(){
+		public function GetConfigurationForm(): string {
 			if ($this->HasActiveParent()) {
 				$this->Send("getClients",'');
 			}			

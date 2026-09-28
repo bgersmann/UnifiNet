@@ -66,4 +66,12 @@ Keine vorhanden. Die Instanz dient ausschließlich als Schnittstelle.
 
 ### 7. PHP-Befehlsreferenz
 
-Keine vorhanden. Die Kommunikation läuft über die untergeordneten Instanzen.
+Die Instanz stellt kein eigenes Bedienkommando bereit — die Kommunikation läuft über die
+untergeordneten Instanzen, die ihre Anfragen intern an das Gateway weiterleiten.
+
+Darüber hinaus sind die API-Methoden des Gateways als `UNIFIGW_`-Befehle erreichbar
+(z. B. `UNIFIGW_getSites`, `UNIFIGW_getDevices`, `UNIFIGW_getNetworkVersion`). Sie sind für
+die interne Nutzung durch die Kind-Instanzen gedacht, liefern ihre Ergebnisse in einem
+nicht zugesicherten Format und können sich in künftigen Versionen ohne Vorankündigung
+ändern. Für eigene Skripte bitte die Statusvariablen der Geräte-, Endgeräte-, Netzwerk-
+und WLAN-Instanzen verwenden.

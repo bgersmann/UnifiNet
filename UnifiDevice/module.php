@@ -1,18 +1,22 @@
 <?php
 
 declare(strict_types=1);
-	class UnifiDevice extends IPSModule
+	class UnifiDevice extends IPSModuleStrict
 	{
         private const COLOR_YELLOW = 16776960;
         private const COLOR_GREEN = 1692672;
         private const COLOR_RED = 16077123;
         private const COLOR_UPDATE = 16711680;
-		public function Create()
+		public function GetCompatibleParents(): string
+		{
+			return json_encode([ 'type' => 'connect', 'moduleIDs' => [ '{A792D3EC-FEC5-A8E6-F792-E141097C6AB0}' ] ]);
+		}
+
+		public function Create(): void
 		{
 			//Never delete this line!
 			parent::Create();
 
-			$this->ConnectParent('{A792D3EC-FEC5-A8E6-F792-E141097C6AB0}');
 			$this->RegisterPropertyString( 'ID', '' );
         	$this->RegisterPropertyInteger( 'Timer', '0' );
         	$this->RegisterTimer( 'Collect Data', 0, "UNIFIDV_Send(\$_IPS['TARGET'],'getDeviceData','');" );
@@ -24,13 +28,13 @@ declare(strict_types=1);
 			$this->RegisterPropertyBoolean("Utilization", 0);
 		}
 
-		public function Destroy()
+		public function Destroy(): void
 		{
 			//Never delete this line!
 			parent::Destroy();
 		}
 
-		public function ApplyChanges()
+		public function ApplyChanges(): void
 		{
 			//Never delete this line!
 			parent::ApplyChanges();
@@ -45,10 +49,11 @@ declare(strict_types=1);
 				[ 'Caption'=> $this->Translate( 'Update available' ), 'ColorActive'=> true, 'ColorValue'=> self::COLOR_UPDATE, 'ContentColorActive'=> false, 'ContentColorValue'=> -1, 'IconActive'=> false, 'IconValue'=> '', 'Value'=> true ]
 			] ) ], $vpos++, 1 );
 						
-			$variablenID=@$this->GetIDForIdent("UptimeSec");
-			if ($variablenID==false) {
-				$variablenID = $this->RegisterVariableInteger('UptimeSec', $this->Translate( 'Uptime' ), [ 'PRESENTATION' => VARIABLE_PRESENTATION_DURATION, 'FORMAT'=> 2],$vpos++);
-				IPS_SetIcon($variablenID,'circle-info');
+			// The duration presentation has no ICON parameter, so the icon is set on the object.
+			// RegisterVariableInteger does not return the variable ID, hence GetIDForIdent afterwards.
+			if (@$this->GetIDForIdent("UptimeSec") == false) {
+				$this->RegisterVariableInteger('UptimeSec', $this->Translate( 'Uptime' ), [ 'PRESENTATION' => VARIABLE_PRESENTATION_DURATION, 'FORMAT'=> 2],$vpos++);
+				IPS_SetIcon($this->GetIDForIdent("UptimeSec"),'circle-info');
 			} else {
 				$vpos++;
 			}
@@ -81,7 +86,7 @@ declare(strict_types=1);
 			}
 		}
 
-		public function Send(string $api, string $param1)
+		public function Send(string $api, string $param1): void
 		{
 			if ($this->HasActiveParent()) {
 				$data=$this->SendDataToParent(json_encode(['DataID' => '{4A5538F1-1C38-198A-3144-D806E0DADF87}',
@@ -243,21 +248,21 @@ declare(strict_types=1);
 			}
 		}
 
-		public function PowerCycle(int $port)
+		public function PowerCycle(int $port): void
 		{
 			if ($this->HasActiveParent()) {
 				$this->Send('setPortCycle',strval($port));
 			}
 		}
 
-		public function RestartDevice()
+		public function RestartDevice(): void
 		{
 			if ($this->HasActiveParent()) {
 				$this->Send('setRestartDevice','');
 			}
 		}
 
-		public function GetConfigurationForm(){       
+		public function GetConfigurationForm(): string {
 			if ($this->HasActiveParent()) {
 				$this->Send('getDevices','');
 			}	

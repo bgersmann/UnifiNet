@@ -3,33 +3,37 @@
 declare(strict_types=1);
 
 // CLASS UnifiNetwork
-class UnifiNetwork extends IPSModule
+class UnifiNetwork extends IPSModuleStrict
 {
     private const COLOR_GREEN = 1692672;
     private const COLOR_RED = 16077123;
+
+    public function GetCompatibleParents(): string
+    {
+        return json_encode([ 'type' => 'connect', 'moduleIDs' => [ '{A792D3EC-FEC5-A8E6-F792-E141097C6AB0}' ] ]);
+    }
 
     /**
      * In contrast to Construct, this function is called only once when creating the instance and starting IP-Symcon.
      * Therefore, status variables and module properties which the module requires permanently should be created here.
      */
-    public function Create()
+    public function Create(): void
     {
         //Never delete this line!
         parent::Create();
 
-        $this->ConnectParent('{A792D3EC-FEC5-A8E6-F792-E141097C6AB0}');
         $this->RegisterPropertyString( 'ID', '' );
         $this->RegisterPropertyInteger( 'Timer', 0 );
 		$this->RegisterTimer( 'Collect Data', 0, "UNIFINW_Send(\$_IPS['TARGET'],'getNetworkDetails','');" );
     }
 
 
-    public function Destroy()
+    public function Destroy(): void
     {
         parent::Destroy();
     }
 
-    public function Send(string $api, string $param1)
+    public function Send(string $api, string $param1): void
 		{
 			if ($this->HasActiveParent()) {
 				$data=$this->SendDataToParent(json_encode(['DataID' => '{4A5538F1-1C38-198A-3144-D806E0DADF87}',
@@ -92,7 +96,7 @@ class UnifiNetwork extends IPSModule
 			}
 		}
 
-    public function GetConfigurationForm()
+    public function GetConfigurationForm(): string
     {
        		if ($this->HasActiveParent()) {
 				$this->Send('getNetworks','');
@@ -123,7 +127,7 @@ class UnifiNetwork extends IPSModule
 	}
 
 
-    public function ApplyChanges()
+    public function ApplyChanges(): void
     {
        parent::ApplyChanges();
         $vpos = 100;
@@ -202,13 +206,13 @@ class UnifiNetwork extends IPSModule
 
 
     
-    public function RequestAction($ident, $value)
+    public function RequestAction(string $Ident, mixed $Value): void
     {
         // Debug output
-        $this->SendDebug(__FUNCTION__, $ident . ' => ' . $value, 0);
+        $this->SendDebug(__FUNCTION__, $Ident . ' => ' . json_encode($Value), 0);
         // Switching a network on or off is deliberately not implemented: the API rejects the
         // update with "invalid VLAN ID" or "invalid IP configuration" even for unchanged payloads.
-        switch ($ident) {
+        switch ($Ident) {
             default:
                 $this->SendDebug(__FUNCTION__, 'There was no reaction to the action.', 0);
         }

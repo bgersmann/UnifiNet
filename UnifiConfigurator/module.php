@@ -1,29 +1,33 @@
 <?php
 
 declare(strict_types=1);
-	class UnifiConfigurator extends IPSModule
+	class UnifiConfigurator extends IPSModuleStrict
 	{
-		public function Create()
+		public function GetCompatibleParents(): string
+		{
+			return json_encode([ 'type' => 'connect', 'moduleIDs' => [ '{A792D3EC-FEC5-A8E6-F792-E141097C6AB0}' ] ]);
+		}
+
+		public function Create(): void
 		{
 			//Never delete this line!
 			parent::Create();
-			$this->ConnectParent('{A792D3EC-FEC5-A8E6-F792-E141097C6AB0}');
 		}
 
-		public function Destroy()
+		public function Destroy(): void
 		{
 			//Never delete this line!
 			parent::Destroy();
 		}
 
-		public function ApplyChanges()
+		public function ApplyChanges(): void
 		{
 			//Never delete this line!
 			parent::ApplyChanges();
 		}
 
-		public function Send(string $api)
-		{		
+		public function Send(string $api): void
+		{
 			if ($this->HasActiveParent()) {
 				$data = $this->SendDataToParent(json_encode(['DataID' => '{4A5538F1-1C38-198A-3144-D806E0DADF87}',
 					'Api' => $api,
@@ -45,7 +49,7 @@ declare(strict_types=1);
 			}
 		}
 
-		public function GetConfigurationForm()
+		public function GetConfigurationForm(): string
 		{
 			if ($this->HasActiveParent()) {
 				$this->Send("getDevicesConfig");

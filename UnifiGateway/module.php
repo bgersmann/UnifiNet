@@ -2,12 +2,12 @@
 
 declare( strict_types = 1 );
 
-class UnifiGateway extends IPSModule
+class UnifiGateway extends IPSModuleStrict
 {
     private const CONNECT_TIMEOUT = 5;
     private const REQUEST_TIMEOUT = 15;
 
-    public function Create()
+    public function Create(): void
     {
         //Never delete this line!
         parent::Create();
@@ -17,13 +17,13 @@ class UnifiGateway extends IPSModule
         $this->RegisterPropertyBoolean('applicationVersion', 0);
     }
 
-    public function Destroy()
+    public function Destroy(): void
     {
         //Never delete this line!
         parent::Destroy();
     }
 
-    public function ApplyChanges()
+    public function ApplyChanges(): void
     {
         //Never delete this line!
         parent::ApplyChanges();
@@ -41,7 +41,7 @@ class UnifiGateway extends IPSModule
 		}
     }
 
-    public function ForwardData( $JSONString )
+    public function ForwardData( string $JSONString ): string
     {
         $data = json_decode( $JSONString );
         $APIKey = $this->ReadPropertyString( 'APIKey' );
@@ -132,9 +132,9 @@ class UnifiGateway extends IPSModule
                     $this->SendDebug("UnifiGW", json_encode($data), 0);
                     if (isset($data->Param1)){
                         $jsonString = $this->getDeviceName($data->Param1);
-                        return serialize($jsonString);  
-                    } 
-                    return serialize(false);
+                        return serialize($jsonString);
+                    }
+                    return '';
                     break;
                 case "setPortCycle":
                     if (isset($data->Param1)){
@@ -152,19 +152,13 @@ class UnifiGateway extends IPSModule
 					break;
 
 			}
-			
+
 		}
+        // Unknown API or missing parameter: the child checks for an empty result.
+        return '';
     }
 
-    public function Send( int $id,string $Api, string $Text )
-    {
-        $this->SendDataToChildren( json_encode( [ 'DataID' => '{6E3E09BC-4C83-0ABF-4C97-7E7B8C70A64E}', 
-                                                'id' =>  $id,
-                                                'Api'=> $Api,
-                                                'data'=> $Text ] ) );		
-    }
-
-    public function GetConfigurationForm() {
+    public function GetConfigurationForm(): string {
         $ServerAddress = $this->ReadPropertyString( 'ServerAddress' );
         $APIKey = $this->ReadPropertyString( 'APIKey' );
         $site = $this->ReadPropertyString( 'Site' );
@@ -339,6 +333,7 @@ class UnifiGateway extends IPSModule
         $site = $this->ReadPropertyString( 'Site' );
         $siteID = $this->getSiteID( $site );
         $JSONData=$this->getApiData('/'.$siteID.'/wifi/broadcasts');
+        $value = [];
         $this->SendDebug("UnifiGW", "getSiteWifis: " .json_encode($JSONData) , 0);
         if ( is_array( $JSONData ) && isset( $JSONData ) ) {
             if ( isset( $JSONData['error'] ) ) {
@@ -375,6 +370,7 @@ class UnifiGateway extends IPSModule
         $site = $this->ReadPropertyString( 'Site' );
         $siteID = $this->getSiteID( $site );
         $JSONData=$this->getApiData('/'.$siteID.'/networks');
+        $value = [];
         $this->SendDebug("UnifiGW", "getNetworks: " .json_encode($JSONData) , 0);
         if ( is_array( $JSONData ) && isset( $JSONData ) ) {
             if ( isset( $JSONData['error'] ) ) {
@@ -425,7 +421,8 @@ class UnifiGateway extends IPSModule
     }
 
     public function getSites():array {
-        $JSONData = $this->getApiData();       
+        $JSONData = $this->getApiData();
+        $value = [];
         if ( is_array( $JSONData ) && isset( $JSONData ) ) {
             if ( isset( $JSONData['error'] ) ) {
                 if ($JSONData['error']['code']<> 200) {
@@ -558,6 +555,7 @@ class UnifiGateway extends IPSModule
         $site = $this->ReadPropertyString( 'Site' );
         $siteID = $this->getSiteID( $site );
         $JSONData = $this->getApiData( '/'.$siteID.'/clients?limit=200' );
+        $value = [];
         if ( is_array( $JSONData ) && isset( $JSONData ) ) {
             if (isset($JSONData[ 'data' ])) {
                 $clients = $JSONData[ 'data' ];
@@ -576,9 +574,9 @@ class UnifiGateway extends IPSModule
                     'caption'=>'default',
                     'value'=> 'default'
                 ];
-            }            
-            return $value;
+            }
         }
+        return $value;
     }
 
     public function updateNetworkSettings(string $networkID, string $jsonPayload):string {
@@ -623,17 +621,18 @@ class UnifiGateway extends IPSModule
         return json_encode($JSONData);
     }
 
-     public function getClientData(string $clientID) {
+     public function getClientData(string $clientID): string {
         $site = $this->ReadPropertyString( 'Site' );
         $siteID = $this->getSiteID( $site );
         $JSONData = $this->getApiData( '/'.$siteID.'/clients/'.$clientID );
         return json_encode($JSONData);
     }
 
-	public function getDevices() {
+	public function getDevices(): array {
         $site = $this->ReadPropertyString( 'Site' );
         $siteID = $this->getSiteID( $site );
         $JSONData = $this->getApiData( '/'.$siteID.'/devices?limit=200' );
+        $value = [];
 
         if ( is_array( $JSONData ) && isset( $JSONData ) ) {
             if (isset($JSONData[ 'data' ])) {
@@ -654,23 +653,23 @@ class UnifiGateway extends IPSModule
                     'value'=> 'default'
                 ];
             }
-            return $value;
         }
+        return $value;
     }
 
-    public function getDeviceStats(string $deviceID) {
+    public function getDeviceStats(string $deviceID): string {
         $site = $this->ReadPropertyString( 'Site' );
         $siteID = $this->getSiteID( $site );
         $JSONData = $this->getApiData( '/'.$siteID.'/devices/'.$deviceID.'/statistics/latest' );
         return json_encode($JSONData);        
     }
 
-    public function getConnectedClients(string $deviceID) {
+    public function getConnectedClients(string $deviceID): string {
         $site = $this->ReadPropertyString( 'Site' );
         $siteID = $this->getSiteID( $site );
         $JSONData = $this->getApiData( '/'.$siteID.'/clients?limit=500' );
         $count = 0;
-        $data=$JSONData['data'];
+        $data=$JSONData['data'] ?? [];
         if (is_array($data)) {
             foreach ($data as $item) {            
                 if (isset($item['uplinkDeviceId']) && $item['uplinkDeviceId'] === $deviceID) {
@@ -700,7 +699,7 @@ class UnifiGateway extends IPSModule
             return '';
         }
 
-    private function getInstanceIDForGuid( $id, $guid )
+    private function getInstanceIDForGuid( string $id, string $guid ): int
         {
             $instanceIDs = IPS_GetInstanceListByModuleID( $guid );
             foreach ( $instanceIDs as $instanceID ) {
@@ -720,8 +719,9 @@ class UnifiGateway extends IPSModule
         $site = $this->ReadPropertyString( 'Site' );
         $siteID = $this->getSiteID( $site );
         $JSONData = $this->getApiData( '/'.$siteID.'/devices?limit=200' );
+        $value = [];
 
-        if ( is_array( $JSONData ) && isset( $JSONData ) )
+        if ( isset( $JSONData[ 'data' ] ) && is_array( $JSONData[ 'data' ] ) )
         {
             $devices = $JSONData[ 'data' ];
             $this->SendDebug("UnifiGW", json_encode($devices), 0);
@@ -749,7 +749,7 @@ class UnifiGateway extends IPSModule
             }
         }
         $JSONData = $this->getApiData( '/'.$siteID.'/clients?limit=200' );
-        if ( is_array( $JSONData ) && isset( $JSONData ) ) {
+        if ( isset( $JSONData[ 'data' ] ) && is_array( $JSONData[ 'data' ] ) ) {
             $clients = $JSONData[ 'data' ];
             usort( $clients, function ( $a, $b ) {
                 return $a[ 'name' ]>$b[ 'name' ];
@@ -777,7 +777,7 @@ class UnifiGateway extends IPSModule
             }
         if ($this->networkVersionCheck()) {  
             $JSONData = $this->getApiData( '/'.$siteID.'/wifi/broadcasts?limit=200' );
-            if ( is_array( $JSONData ) && isset( $JSONData ) ) {
+            if ( isset( $JSONData[ 'data' ] ) && is_array( $JSONData[ 'data' ] ) ) {
                 $wifis = $JSONData[ 'data' ];
                 usort( $wifis, function ( $a, $b ) {
                     return $a[ 'name' ]>$b[ 'name' ];
@@ -804,7 +804,7 @@ class UnifiGateway extends IPSModule
                     }
                 }
             $JSONData = $this->getApiData( '/'.$siteID.'/networks?limit=200' );
-            if ( is_array( $JSONData ) && isset( $JSONData ) ) {
+            if ( isset( $JSONData[ 'data' ] ) && is_array( $JSONData[ 'data' ] ) ) {
                 $networks = $JSONData[ 'data' ];
                 usort( $networks, function ( $a, $b ) {
                     return $a[ 'name' ]>$b[ 'name' ];

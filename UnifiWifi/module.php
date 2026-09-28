@@ -3,28 +3,32 @@
 declare(strict_types=1);
 
 // CLASS UnifiWifi
-class UnifiWifi extends IPSModule
+class UnifiWifi extends IPSModuleStrict
 {
     private const COLOR_GREEN = 1692672;
     private const COLOR_RED = 16077123;
 
-    public function Create()
+    public function GetCompatibleParents(): string
+    {
+        return json_encode([ 'type' => 'connect', 'moduleIDs' => [ '{A792D3EC-FEC5-A8E6-F792-E141097C6AB0}' ] ]);
+    }
+
+    public function Create(): void
     {
         //Never delete this line!
         parent::Create();
-	
-        $this->ConnectParent('{A792D3EC-FEC5-A8E6-F792-E141097C6AB0}');
+
 		$this->RegisterPropertyString( 'ID', '' );
         $this->RegisterPropertyInteger( 'Timer', 0 );
 		$this->RegisterTimer( 'Collect Data', 0, "UNIFIWF_Send(\$_IPS['TARGET'],'getWifiDetails','');" );
     }
 
-    public function Destroy()
+    public function Destroy(): void
     {
         parent::Destroy();
     }
 
-    public function Send(string $api, string $param1)
+    public function Send(string $api, string $param1): void
 		{
 			if ($this->HasActiveParent()) {
 				$data=$this->SendDataToParent(json_encode(['DataID' => '{4A5538F1-1C38-198A-3144-D806E0DADF87}',
@@ -86,7 +90,7 @@ class UnifiWifi extends IPSModule
 
 
 
-    public function GetConfigurationForm()
+    public function GetConfigurationForm(): string
     {
        		if ($this->HasActiveParent()) {
 				$this->Send('getWifis','');
@@ -118,7 +122,7 @@ class UnifiWifi extends IPSModule
     /**
      * Is executed when "Apply" is pressed on the configuration page and immediately after the instance has been created.
      */
-    public function ApplyChanges()
+    public function ApplyChanges(): void
     {
         parent::ApplyChanges();
         $vpos = 100;
@@ -217,19 +221,18 @@ class UnifiWifi extends IPSModule
 		}
     }    
     
-    public function RequestAction($ident, $value)
+    public function RequestAction(string $Ident, mixed $Value): void
     {
         // Debug output
-        $this->SendDebug(__FUNCTION__, $ident . ' => ' . $value, 0);
-        switch ($ident) {
+        $this->SendDebug(__FUNCTION__, $Ident . ' => ' . json_encode($Value), 0);
+        switch ($Ident) {
             case 'WifiEnabled':
-				$jsonPayload = $this->buildWifiUpdateJson($value);
+				$jsonPayload = $this->buildWifiUpdateJson((bool) $Value);
 				if ($jsonPayload !== '') {
 					$this->Send('updateWifiSettings', $jsonPayload);
 				}
 				usleep(100000);
 				$this->Send('getWifiDetails','');
-				//$this->SetValue($ident, $value);
                 break;
             default:
                 $this->SendDebug(__FUNCTION__, 'There was no reaction to the action.', 0);
@@ -309,7 +312,7 @@ class UnifiWifi extends IPSModule
 		return $jsonPayload;
 	}
 
-	private function normalizeBroadcastingFrequencies($frequencies, string $type): array
+	private function normalizeBroadcastingFrequencies(mixed $frequencies, string $type): array
 	{
 		if ($type === 'IOT_OPTIMIZED') {
 			return ['2.4'];
