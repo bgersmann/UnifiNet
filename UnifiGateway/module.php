@@ -19,6 +19,7 @@ class UnifiGateway extends IPSModuleStrict
         $this->RegisterPropertyInteger( 'VersionTimer', 3600 );
         $this->RegisterPropertyBoolean('networkHierarchy', 0);
         $this->RegisterPropertyInteger( 'HierarchyTimer', 3600 );
+        $this->RegisterPropertyBoolean('hierarchyClients', 0);
         $this->RegisterTimer( 'Update Version', 0, "UNIFIGW_UpdateApplicationVersion(\$_IPS['TARGET']);" );
         $this->RegisterTimer( 'Update Hierarchy', 0, "UNIFIGW_UpdateNetworkHierarchy(\$_IPS['TARGET']);" );
     }
@@ -64,6 +65,7 @@ class UnifiGateway extends IPSModuleStrict
                 break;
             case "networkHierarchyChanged":
                 $this->UpdateFormField( 'HierarchyTimer', 'enabled', (bool) $Value );
+                $this->UpdateFormField( 'hierarchyClients', 'enabled', (bool) $Value );
                 break;
             default:
                 throw new Exception( 'Invalid Ident' );
@@ -146,6 +148,27 @@ class UnifiGateway extends IPSModuleStrict
                 'displayValue' => $this->getHierarchyText( implode( ' | ', $value ), 100, '' )
             ];
         }
+        if ( $this->ReadPropertyBoolean("hierarchyClients") ) {
+            $clients = $this->getAllClients( $siteID );
+            if ( $clients === null ) {
+                return '';
+            }
+            usort( $clients, function ( $a, $b ) {
+                return strcmp($a['name'] ?? '', $b['name'] ?? '');
+            });
+            foreach ( $clients as $client ) {
+                $uplink = $client[ 'uplinkDeviceId' ] ?? '';
+                $value = array_filter( [ $client[ 'type' ] ?? '', $client[ 'ipAddress' ] ?? '' ] );
+                // The kind "variable" gives clients their own color in the tree.
+                $nodes[] = [
+                    'id'           => $client[ 'id' ],
+                    'parentId'     => isset( $uplinks[ $uplink ] ) ? $uplink : self::HIERARCHY_ROOT_ID,
+                    'name'         => $this->getHierarchyText( $client[ 'name' ] ?? '', 120, $client[ 'id' ] ),
+                    'kind'         => 'variable',
+                    'displayValue' => $this->getHierarchyText( implode( ' | ', $value ), 100, '' )
+                ];
+            }
+        }
         $json = json_encode( [
             'format'        => 'de.burki24.symconecharts.tree',
             'formatVersion' => '1.0',
@@ -153,6 +176,20 @@ class UnifiGateway extends IPSModuleStrict
             'nodes'         => $nodes
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
         return $json === false ? '' : $json;
+    }
+
+    // The API returns at most 200 clients per request, whatever limit is requested.
+    private function getAllClients( string $siteID ): ?array
+    {
+        $clients = [];
+        do {
+            $JSONData = $this->getApiData( '/'.$siteID.'/clients?limit=200&offset='.count( $clients ) );
+            if ( !isset( $JSONData[ 'data' ] ) || !is_array( $JSONData[ 'data' ] ) ) {
+                return null;
+            }
+            $clients = array_merge( $clients, $JSONData[ 'data' ] );
+        } while ( $JSONData[ 'data' ] !== [] && count( $clients ) < ( $JSONData[ 'totalCount' ] ?? 0 ) );
+        return $clients;
     }
 
     // The format rejects unknown parents and cycles, such devices are attached to the root.
@@ -329,6 +366,7 @@ class UnifiGateway extends IPSModuleStrict
         $arrayElements[] = array( 'type' => 'NumberSpinner', 'name' => 'VersionTimer', 'caption' => $this->Translate('Version update interval (s) -> 0=Off'), 'minimum' => 0, 'enabled' => $this->ReadPropertyBoolean("applicationVersion") );
         $arrayElements[] = array( 'type' => 'CheckBox', 'name' => 'networkHierarchy', 'caption' => $this->Translate('Create network hierarchy as JSON (for EChartsTree)'), 'onChange' => 'IPS_RequestAction($id, "networkHierarchyChanged", $networkHierarchy);' );
         $arrayElements[] = array( 'type' => 'NumberSpinner', 'name' => 'HierarchyTimer', 'caption' => $this->Translate('Hierarchy update interval (s) -> 0=Off'), 'minimum' => 0, 'enabled' => $this->ReadPropertyBoolean("networkHierarchy") );
+        $arrayElements[] = array( 'type' => 'CheckBox', 'name' => 'hierarchyClients', 'caption' => $this->Translate('Include clients in the hierarchy'), 'enabled' => $this->ReadPropertyBoolean("networkHierarchy") );
         $arrayElements[] = array( 'type' => 'Select', 'name' => 'Site', 'caption' => 'Site', 'options' => $arrayOptions );
 
         if ( !empty( $APIKey ) && $this->GetStatus() === 102 ) {

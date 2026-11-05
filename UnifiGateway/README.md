@@ -20,7 +20,7 @@ Instanz und beziehen ihre Daten darüber.
 * Wählt die zu verwendende Site aus
 * Verteilt die Daten an die untergeordneten UnifiDevice-, UnifiClient-, UnifiNetwork- und UnifiWifi-Instanzen
 * Optional: zeigt die Version der UniFi Network Application an und aktualisiert sie per Timer
-* Optional: legt die Hierarchie der UniFi Geräte als JSON in einer Stringvariable ab, zum Beispiel für die Darstellung mit EChartsTree
+* Optional: legt die Hierarchie der UniFi Geräte, auf Wunsch mit Endgeräten, als JSON in einer Stringvariable ab, zum Beispiel für die Darstellung mit EChartsTree
 
 ### 2. Voraussetzungen
 
@@ -49,6 +49,7 @@ Anwendungsversion anzeigen | Erzeugt eine Variable mit der Version der UniFi Net
 Aktualisierungsintervall Version | Intervall in Sekunden, in dem die Version abgefragt wird (Standard: 3600, 0 = aus). Nur aktiv, wenn die Anwendungsversion angezeigt wird.
 Netzwerkhierarchie als JSON anlegen | Erzeugt eine Stringvariable mit der Hierarchie der UniFi Geräte.
 Aktualisierungsintervall Hierarchie | Intervall in Sekunden, in dem die Hierarchie aktualisiert wird (Standard: 3600, 0 = aus). Jede Aktualisierung fragt jedes Gerät einzeln ab.
+Endgeräte in die Hierarchie aufnehmen | Ergänzt die aktuell verbundenen Endgeräte unter ihrem Uplink-Gerät (Standard: aus).
 
 Beim Übernehmen der Konfiguration werden die aktivierten Werte sofort aktualisiert. Im Aktionsbereich lassen sie sich zusätzlich über die Schaltflächen 'Version aktualisieren' und 'Hierarchie aktualisieren' abrufen.
 
@@ -56,7 +57,9 @@ __Netzwerkhierarchie in EChartsTree darstellen__:
 
 In der [EChartsTree](https://github.com/Burki24/SymconECharts/blob/dev/EChartsTree/README.md#eigene-hierarchie-als-json)-Instanz als Datenquelle 'JSON-Stringvariable' wählen und die Variable 'Netzwerkhierarchie' dieser Instanz auswählen.
 
-Die Wurzel des Baums ist die Site. Darunter steht jedes Gerät unter seinem übergeordneten Gerät (Uplink), als Werttext werden Modell und IP-Adresse angezeigt, bei nicht verbundenen Geräten zusätzlich der Zustand. Endgeräte sind nicht enthalten. Geräte ohne Uplink, mit unbekanntem Uplink oder mit einem Ringbezug hängen direkt an der Wurzel. Schlägt eine Abfrage fehl, bleibt der letzte vollständige Stand erhalten.
+Die Wurzel des Baums ist die Site. Darunter steht jedes Gerät unter seinem übergeordneten Gerät (Uplink), als Werttext werden Modell und IP-Adresse angezeigt, bei nicht verbundenen Geräten zusätzlich der Zustand. Geräte ohne Uplink, mit unbekanntem Uplink oder mit einem Ringbezug hängen direkt an der Wurzel. Schlägt eine Abfrage fehl, bleibt der letzte vollständige Stand erhalten.
+
+Mit aktivierter Option stehen die Endgeräte unter ihrem Uplink-Gerät, als Werttext werden Verbindungsart und IP-Adresse angezeigt. Sie erscheinen als Rolle `variable` und heben sich damit farblich von den Geräten ab. Die API liefert nur verbundene Endgeräte, getrennte verschwinden daher mit der nächsten Aktualisierung aus dem Baum. Der Baum wird dadurch tiefer und größer, die Ansichtsgrenzen der EChartsTree-Instanz müssen dazu passen.
 
 ### 5. Statusvariablen und Profile
 
