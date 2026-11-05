@@ -26,7 +26,7 @@ Radio-Zustand — als Statusvariablen aktuell.
 
 ### 2. Voraussetzungen
 
-- IP-Symcon ab Version 8.0
+- IP-Symcon ab Version 8.1
 - Eine konfigurierte [UnifiGateway](../UnifiGateway)-Instanz
 
 ### 3. Software-Installation

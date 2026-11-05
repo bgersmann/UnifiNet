@@ -26,7 +26,7 @@ Folgende Module beinhaltet das UnifiNet Repository:
 
 ## Voraussetzungen
 
-- IP-Symcon ab Version 8.0
+- IP-Symcon ab Version 8.1
 - Eine UniFi Konsole mit aktivierter Network Integration API
 - Ein API-Key, erzeugt unter 'UniFi Network > Settings > Control Plane > Integrations'
 

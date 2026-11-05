@@ -6,6 +6,7 @@ class UnifiGateway extends IPSModuleStrict
 {
     private const CONNECT_TIMEOUT = 5;
     private const REQUEST_TIMEOUT = 15;
+    private const HIERARCHY_ROOT_ID = 'site';
 
     public function Create(): void
     {
@@ -15,6 +16,11 @@ class UnifiGateway extends IPSModuleStrict
         $this->RegisterPropertyString( 'APIKey', '' );
         $this->RegisterPropertyString( 'Site', 'default' );
         $this->RegisterPropertyBoolean('applicationVersion', 0);
+        $this->RegisterPropertyInteger( 'VersionTimer', 3600 );
+        $this->RegisterPropertyBoolean('networkHierarchy', 0);
+        $this->RegisterPropertyInteger( 'HierarchyTimer', 3600 );
+        $this->RegisterTimer( 'Update Version', 0, "UNIFIGW_UpdateApplicationVersion(\$_IPS['TARGET']);" );
+        $this->RegisterTimer( 'Update Hierarchy', 0, "UNIFIGW_UpdateNetworkHierarchy(\$_IPS['TARGET']);" );
     }
 
     public function Destroy(): void
@@ -30,6 +36,10 @@ class UnifiGateway extends IPSModuleStrict
         $vpos = 100;
         $APIKey = $this->ReadPropertyString( 'APIKey' );
         $this->MaintainVariable( 'applicationVersion', $this->Translate( 'Application Version' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, $this->ReadPropertyBoolean("applicationVersion") );
+        $this->MaintainVariable( 'networkHierarchy', $this->Translate( 'Network Hierarchy' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'sitemap'], $vpos++, $this->ReadPropertyBoolean("networkHierarchy") );
+        $active = !empty($APIKey);
+        $this->SetTimerInterval( 'Update Version', ($active && $this->ReadPropertyBoolean("applicationVersion")) ? $this->ReadPropertyInteger( 'VersionTimer' ) * 1000 : 0 );
+        $this->SetTimerInterval( 'Update Hierarchy', ($active && $this->ReadPropertyBoolean("networkHierarchy")) ? $this->ReadPropertyInteger( 'HierarchyTimer' ) * 1000 : 0 );
         if (empty($APIKey))
 		{
 		    // instance inactive
@@ -37,8 +47,136 @@ class UnifiGateway extends IPSModuleStrict
 		} else {
 		    // instance active
 			$this->SetStatus( 102 );
-            $this->SetSummary($this->ReadPropertyString("ServerAddress"));        
+            $this->SetSummary($this->ReadPropertyString("ServerAddress"));
+            // During kernel start the timers take over; no requests before the system is ready.
+            if ( IPS_GetKernelRunlevel() === KR_READY ) {
+                $this->UpdateApplicationVersion();
+                $this->UpdateNetworkHierarchy();
+            }
 		}
+    }
+
+    public function RequestAction( string $Ident, mixed $Value ): void
+    {
+        switch ($Ident) {
+            case "applicationVersionChanged":
+                $this->UpdateFormField( 'VersionTimer', 'enabled', (bool) $Value );
+                break;
+            case "networkHierarchyChanged":
+                $this->UpdateFormField( 'HierarchyTimer', 'enabled', (bool) $Value );
+                break;
+            default:
+                throw new Exception( 'Invalid Ident' );
+        }
+    }
+
+    public function UpdateApplicationVersion(): void
+    {
+        if ($this->ReadPropertyBoolean("applicationVersion")) {
+            $this->storeApplicationVersion($this->getNetworkVersion());
+        }
+    }
+
+    public function UpdateNetworkHierarchy(): void
+    {
+        if (!$this->ReadPropertyBoolean("networkHierarchy") || empty($this->ReadPropertyString( 'APIKey' ))) {
+            return;
+        }
+        $json = $this->buildNetworkHierarchy();
+        // Keep the last valid document if the data is incomplete: the tree must not lose devices.
+        if ($json === '') {
+            $this->SendDebug("UnifiGW", "Network hierarchy not updated.", 0);
+            return;
+        }
+        $this->SetValue( 'networkHierarchy', $json );
+        $this->SetStatus( 102 );
+    }
+
+    private function storeApplicationVersion( string $version ): void
+    {
+        if ($version !== '' && $version !== 'notfound') {
+            $this->SetValue( 'applicationVersion', $version );
+        }
+    }
+
+    // Tree document for EChartsTree: de.burki24.symconecharts.tree, formatVersion 1.0.
+    private function buildNetworkHierarchy(): string
+    {
+        $site = $this->ReadPropertyString( 'Site' );
+        $siteID = '';
+        $siteName = $site;
+        $JSONData = $this->getApiData();
+        foreach ( $JSONData[ 'data' ] ?? [] as $item ) {
+            if ( $item[ 'internalReference' ] == $site ) {
+                $siteID = $item[ 'id' ];
+                $siteName = $item[ 'name' ] ?? $site;
+            }
+        }
+        if ($siteID === '') {
+            return '';
+        }
+        $JSONData = $this->getApiData( '/'.$siteID.'/devices?limit=200' );
+        if ( !isset( $JSONData[ 'data' ] ) || !is_array( $JSONData[ 'data' ] ) ) {
+            return '';
+        }
+        $devices = $JSONData[ 'data' ];
+        usort( $devices, function ( $a, $b ) {
+            return strcmp($a['name'] ?? '', $b['name'] ?? '');
+        });
+
+        // The device list has no uplink, only the details of each device do.
+        $uplinks = [];
+        foreach ( $devices as $device ) {
+            $details = $this->getApiData( '/'.$siteID.'/devices/'.$device[ 'id' ] );
+            if ( $details === [] || ( isset( $details[ 'statusCode' ] ) && $details[ 'statusCode' ] <> 404 ) ) {
+                return '';
+            }
+            $uplinks[ $device[ 'id' ] ] = $details[ 'uplink' ][ 'deviceId' ] ?? self::HIERARCHY_ROOT_ID;
+        }
+
+        $nodes = [];
+        $nodes[] = [ 'id' => self::HIERARCHY_ROOT_ID, 'parentId' => null, 'name' => $this->getHierarchyText( $siteName, 120, $site ), 'kind' => 'category' ];
+        foreach ( $devices as $device ) {
+            $value = array_filter( [ $device[ 'model' ] ?? '', $device[ 'ipAddress' ] ?? '', ( $device[ 'state' ] ?? 'ONLINE' ) === 'ONLINE' ? '' : $device[ 'state' ] ] );
+            $nodes[] = [
+                'id'           => $device[ 'id' ],
+                'parentId'     => $this->getHierarchyParent( $device[ 'id' ], $uplinks ),
+                'name'         => $this->getHierarchyText( $device[ 'name' ] ?? '', 120, $device[ 'id' ] ),
+                'kind'         => 'instance',
+                'displayValue' => $this->getHierarchyText( implode( ' | ', $value ), 100, '' )
+            ];
+        }
+        $json = json_encode( [
+            'format'        => 'de.burki24.symconecharts.tree',
+            'formatVersion' => '1.0',
+            'rootId'        => self::HIERARCHY_ROOT_ID,
+            'nodes'         => $nodes
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
+        return $json === false ? '' : $json;
+    }
+
+    // The format rejects unknown parents and cycles, such devices are attached to the root.
+    private function getHierarchyParent( string $id, array $uplinks ): string
+    {
+        $parent = $uplinks[ $id ];
+        if ( !isset( $uplinks[ $parent ] ) ) {
+            return self::HIERARCHY_ROOT_ID;
+        }
+        $seen = [];
+        for ( $current = $parent; isset( $uplinks[ $current ] ) && !isset( $seen[ $current ] ); $current = $uplinks[ $current ] ) {
+            if ( $current === $id ) {
+                return self::HIERARCHY_ROOT_ID;
+            }
+            $seen[ $current ] = true;
+        }
+        return $parent;
+    }
+
+    // The format limits the length and rejects control characters and blank names.
+    private function getHierarchyText( string $text, int $maxLength, string $fallback ): string
+    {
+        $text = trim( (string) preg_replace( '/\p{Cc}/u', '', $text ) );
+        return mb_substr( $text === '' ? $fallback : $text, 0, $maxLength );
     }
 
     public function ForwardData( string $JSONString ): string
@@ -187,18 +325,26 @@ class UnifiGateway extends IPSModuleStrict
         $arrayElements[] = array( 'type' => 'Label', 'label' => $this->Translate('Please create an API key under "UniFi Network > Settings > Control Plane > Integrations".'));
         $arrayElements[] = array( 'type' => 'ValidationTextBox', 'name' => 'ServerAddress', 'caption' => 'Unifi Device IP', 'validate' => "^(([a-zA-Z0-9\\.\\-\\_]+(\\.[a-zA-Z]{2,3})+)|(\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b))$" );
         $arrayElements[] = array( 'type' => 'PasswordTextBox', 'name' => 'APIKey', 'caption' => 'API Key' );
-        $arrayElements[] = array( 'type' => 'CheckBox', 'name' => 'applicationVersion', 'caption' => $this->Translate('Show Application Version') );
+        $arrayElements[] = array( 'type' => 'CheckBox', 'name' => 'applicationVersion', 'caption' => $this->Translate('Show Application Version'), 'onChange' => 'IPS_RequestAction($id, "applicationVersionChanged", $applicationVersion);' );
+        $arrayElements[] = array( 'type' => 'NumberSpinner', 'name' => 'VersionTimer', 'caption' => $this->Translate('Version update interval (s) -> 0=Off'), 'minimum' => 0, 'enabled' => $this->ReadPropertyBoolean("applicationVersion") );
+        $arrayElements[] = array( 'type' => 'CheckBox', 'name' => 'networkHierarchy', 'caption' => $this->Translate('Create network hierarchy as JSON (for EChartsTree)'), 'onChange' => 'IPS_RequestAction($id, "networkHierarchyChanged", $networkHierarchy);' );
+        $arrayElements[] = array( 'type' => 'NumberSpinner', 'name' => 'HierarchyTimer', 'caption' => $this->Translate('Hierarchy update interval (s) -> 0=Off'), 'minimum' => 0, 'enabled' => $this->ReadPropertyBoolean("networkHierarchy") );
         $arrayElements[] = array( 'type' => 'Select', 'name' => 'Site', 'caption' => 'Site', 'options' => $arrayOptions );
 
         if ( !empty( $APIKey ) && $this->GetStatus() === 102 ) {
+            $version = $this->getNetworkVersion();
             if ($this->ReadPropertyBoolean("applicationVersion")) {
-                 $this->SetValue('applicationVersion', $this->getNetworkVersion());
+                 $this->storeApplicationVersion($version);
             }
-            $arrayElements[] = array( 'type' => 'Label', 'label' => $this->Translate('Network Application Version:').' '.$this->getNetworkVersion() );
+            $arrayElements[] = array( 'type' => 'Label', 'label' => $this->Translate('Network Application Version:').' '.$version );
         } else {
             $arrayElements[] = array( 'type' => 'Label', 'label' => $this->Translate('Network Application Version: not found') );
         }
         $arrayActions = array();
+        $arrayOptions = array();
+        $arrayOptions[] = array( 'type' => 'Button', 'width' => '220px', 'visible' => $this->ReadPropertyBoolean("applicationVersion"), 'label' => $this->Translate('Update Version'), 'onClick' => 'UNIFIGW_UpdateApplicationVersion($id);' );
+        $arrayOptions[] = array( 'type' => 'Button', 'width' => '220px', 'visible' => $this->ReadPropertyBoolean("networkHierarchy"), 'label' => $this->Translate('Update Hierarchy'), 'onClick' => 'UNIFIGW_UpdateNetworkHierarchy($id);' );
+        $arrayActions[] = array( 'type' => 'RowLayout', 'items' => $arrayOptions );
 
         return JSON_encode( array( 'status' => $arrayStatus, 'elements' => $arrayElements, 'actions' => $arrayActions ) );
 

@@ -20,7 +20,7 @@ zeigt dessen Konfiguration an und erlaubt das Ein- und Ausschalten des WLANs.
 
 ### 2. Voraussetzungen
 
-- IP-Symcon ab Version 8.0
+- IP-Symcon ab Version 8.1
 - Eine konfigurierte [UnifiGateway](../UnifiGateway)-Instanz
 - UniFi Network Application ab Version 10
 
