@@ -28,7 +28,7 @@ private const CONNECT_TIMEOUT = 5;
         $this->RegisterTimer( 'Update Hierarchy', 0, "UNIFIGW_UpdateNetworkHierarchy(\$_IPS['TARGET']);" );
         $this->RegisterPropertyInteger( 'TileTimer', 60 );
         $this->RegisterTimer( 'Update Tile', 0, "UNIFIGW_UpdateTile(\$_IPS['TARGET']);" );
-        $this->SetVisualizationType(INSTANCE_VISUALIZATION_TYPE_HTML);
+        $this->SetVisualizationType(defined('INSTANCE_VISUALIZATION_TYPE_HTML') ? constant('INSTANCE_VISUALIZATION_TYPE_HTML') : 1);
 }
 
     public function Destroy(): void
@@ -41,7 +41,7 @@ private const CONNECT_TIMEOUT = 5;
     {
         //Never delete this line!
         parent::ApplyChanges();
-        $this->SetVisualizationType(INSTANCE_VISUALIZATION_TYPE_HTML);
+        $this->SetVisualizationType(defined('INSTANCE_VISUALIZATION_TYPE_HTML') ? constant('INSTANCE_VISUALIZATION_TYPE_HTML') : 1);
         $vpos = 100;
 $APIKey = $this->ReadPropertyString( 'APIKey' );
         $this->MaintainVariable( 'applicationVersion', $this->Translate( 'Application Version' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, $this->ReadPropertyBoolean("applicationVersion") );

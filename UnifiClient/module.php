@@ -26,7 +26,7 @@ class UnifiClient extends IPSModuleStrict
 		$this->RegisterPropertyBoolean("MACAnzeigen", 0);
 		$this->RegisterPropertyBoolean("IDAnzeigen", 0);
         $this->RegisterTimer('Collect Data', 0, "UNIFICL_Send(\$_IPS['TARGET'],'getClientData','');");
-        $this->SetVisualizationType(INSTANCE_VISUALIZATION_TYPE_HTML);
+        $this->SetVisualizationType(defined('INSTANCE_VISUALIZATION_TYPE_HTML') ? constant('INSTANCE_VISUALIZATION_TYPE_HTML') : 1);
     }
 
     public function Destroy(): void
@@ -39,7 +39,7 @@ class UnifiClient extends IPSModuleStrict
 		{
 			//Never delete this line!
 			parent::ApplyChanges();
-			$this->SetVisualizationType(INSTANCE_VISUALIZATION_TYPE_HTML);
+			$this->SetVisualizationType(defined('INSTANCE_VISUALIZATION_TYPE_HTML') ? constant('INSTANCE_VISUALIZATION_TYPE_HTML') : 1);
 			$vpos = 100;
 			$this->MaintainVariable( 'ClientName', $this->Translate( 'Client Name' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, 1 );
 			$this->MaintainVariable( 'ID', $this->Translate( 'Client ID' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, $this->ReadPropertyBoolean("IDAnzeigen") );

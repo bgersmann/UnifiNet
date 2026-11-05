@@ -25,7 +25,7 @@ private const COLOR_GREEN = 1692672;
 		$this->RegisterPropertyString( 'ID', '' );
         $this->RegisterPropertyInteger( 'Timer', 0 );
 		$this->RegisterTimer( 'Collect Data', 0, "UNIFIWF_Send(\$_IPS['TARGET'],'getWifiDetails','');" );
-		$this->SetVisualizationType(INSTANCE_VISUALIZATION_TYPE_HTML);
+		$this->SetVisualizationType(defined('INSTANCE_VISUALIZATION_TYPE_HTML') ? constant('INSTANCE_VISUALIZATION_TYPE_HTML') : 1);
 }
 
     public function Destroy(): void
@@ -145,7 +145,7 @@ $type= (( isset($JSONData[ 'type' ]) ) ? $JSONData[ 'type' ] : 'STANDARD');
     public function ApplyChanges(): void
     {
         parent::ApplyChanges();
-        $this->SetVisualizationType(INSTANCE_VISUALIZATION_TYPE_HTML);
+        $this->SetVisualizationType(defined('INSTANCE_VISUALIZATION_TYPE_HTML') ? constant('INSTANCE_VISUALIZATION_TYPE_HTML') : 1);
         $vpos = 100;
 $this->MaintainVariable( 'WifiName', $this->Translate( 'Name' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, 1 );
 		$this->MaintainVariable(
