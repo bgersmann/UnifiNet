@@ -1,0 +1,453 @@
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="/icons.js"></script>
+<style>
+    :root {
+        /* --accent-color, --content-color and --card-color are provided by the html-sdk. */
+        --on-accent: #101114;
+        --ok: #19d400;
+        --warn: #f5b800;
+        --err: #f55143;
+        --muted: rgba(128, 128, 128, .95);
+        --muted: color-mix(in srgb, var(--content-color) 62%, transparent);
+        --track: rgba(128, 128, 128, .22);
+        --track: color-mix(in srgb, var(--content-color) 14%, transparent);
+        --line: rgba(128, 128, 128, .18);
+        --line: color-mix(in srgb, var(--content-color) 10%, transparent);
+        --ok-text: var(--ok);
+        --ok-text: color-mix(in srgb, var(--ok) 78%, var(--content-color));
+        --warn-text: var(--warn);
+        --warn-text: color-mix(in srgb, var(--warn) 72%, var(--content-color));
+        --err-text: var(--err);
+        --err-text: color-mix(in srgb, var(--err) 85%, var(--content-color));
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; }
+    /* The margins of the html-sdk become padding, so that the height of the tile is known. */
+    body { margin: 0 !important; }
+    #t { height: 100%; display: flex; flex-direction: column; gap: .6em; overflow: hidden; }
+    .hid { display: none !important; }
+    .narrow .wide-only { display: none !important; }
+    .off > * { opacity: .55; }
+    .off > .head { opacity: 1; }
+
+    .head { display: flex; align-items: center; gap: .7em; min-width: 0; padding-right: 1.6em; flex: none; }
+    .ic { position: relative; font-size: 1.3em; width: 1.3em; text-align: center; flex: none; line-height: 1; }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex: none; }
+    .ic .dot { position: absolute; right: -4px; bottom: -3px; box-shadow: 0 0 0 2px var(--card-color); }
+    .ok { background: var(--ok); }
+    .warn { background: var(--warn); }
+    .err { background: var(--err); }
+    .ht { min-width: 0; line-height: 1.25; }
+    .ht div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sub { font-size: .78em; color: var(--muted); }
+    /* Symcon draws icon and name itself when the tile has a title bar. */
+    .head .inline-dot { display: none; }
+    .titled .head { gap: .45em; }
+    .titled .head .ic, .titled .head .name { display: none; }
+    .titled .head .inline-dot { display: inline-block; }
+    .narrow:not(.titled) .sub { display: none; }
+
+    .kpis { display: flex; gap: .55em; flex: none; }
+    .kpi { flex: 1 1 0; min-width: 0; line-height: 1.15; }
+    .kpi .v { font-size: 1.55em; white-space: nowrap; }
+    .kpi .v small { font-size: .55em; color: var(--muted); }
+    .kpi .l { font-size: .74em; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .txtok { color: var(--ok-text); }
+    .txterr { color: var(--err-text); }
+
+    .bars { display: flex; gap: 1em; flex: none; }
+    .narrow .bars { flex-direction: column; gap: .35em; }
+    .barx { flex: 1 1 0; min-width: 0; }
+    #t > .barx { flex: none; }
+    .barx .r { display: flex; justify-content: space-between; gap: .5em; font-size: .76em; line-height: 1.35; color: var(--muted); }
+    .barx .r span { white-space: nowrap; }
+    .barx .r span:last-child { color: var(--content-color); }
+    .track { height: 5px; border-radius: 3px; background: var(--track); overflow: hidden; margin-top: 2px; }
+    .track i { display: block; height: 100%; background: var(--accent-color); border-radius: 3px; }
+    .track i.warn { background: var(--warn); }
+    .track i.err { background: var(--err); }
+
+    .rings { display: flex; gap: 1em; align-items: center; flex: none; }
+    .ring { position: relative; width: 62px; height: 62px; flex: none; }
+    .ring svg { transform: rotate(-90deg); display: block; }
+    .ring .bg { stroke: var(--track); }
+    .ring .fg { stroke: var(--accent-color); }
+    .ring .fg.warn { stroke: var(--warn); background: none; }
+    .ring .fg.err { stroke: var(--err); background: none; }
+    .ring div { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; font-size: .86em; }
+    .ring small { font-size: .72em; color: var(--muted); }
+    .short .for-tall { display: none !important; }
+    body:not(.short) .for-short { display: none !important; }
+
+    .ports { --p: 24px; display: flex; gap: 9px; flex: none; }
+    .pg { display: grid; grid-template-rows: repeat(2, var(--p)); grid-auto-flow: column; grid-auto-columns: var(--p); gap: 3px; }
+    .p { position: relative; border: 0; padding: 0; font: inherit; font-size: .68em; color: var(--muted); background: var(--track); border-radius: 4px; cursor: pointer; }
+    .p.g { background: var(--accent-color); color: var(--on-accent); }
+    .p.c { background: var(--warn); color: #1a1400; }
+    .p.sfp { border-radius: 4px 4px 9px 9px; }
+    .p.sel { outline: 2px solid var(--content-color); outline-offset: 1px; }
+    .p.poe::after { content: ""; position: absolute; top: 2px; right: 2px; width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+    .nodigits .p { font-size: 0; }
+    .nodigits .p.poe::after { width: 3px; height: 3px; }
+    .info { display: flex; gap: .85em; font-size: .74em; color: var(--muted); white-space: nowrap; overflow: hidden; flex: none; min-height: 1.4em; align-items: center; }
+    .info span { display: inline-flex; align-items: center; gap: 4px; }
+    .info s { display: inline-block; width: 9px; height: 9px; border-radius: 2px; text-decoration: none; }
+    .info .now { color: var(--content-color); }
+
+    .radios { display: flex; flex-direction: column; gap: .5em; flex: none; }
+    .radio { display: flex; align-items: center; gap: .55em; line-height: 1.2; }
+    .chip { font-size: .74em; padding: 2px 7px; border-radius: 10px; background: var(--track); white-space: nowrap; }
+    .chip.on { background: var(--accent-color); color: var(--on-accent); }
+    .radio .d { min-width: 0; flex: 1; }
+    .radio .d div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .radio .d .s, .radio .rt { font-size: .74em; color: var(--muted); }
+    .radio .rt { text-align: right; white-space: nowrap; }
+
+    .rows { display: flex; flex-direction: column; flex: none; }
+    .row { display: flex; justify-content: space-between; gap: .85em; padding: .28em 0; border-top: 1px solid var(--line); font-size: .85em; line-height: 1.3; }
+    .row.first { border-top: 0; }
+    .row span:first-child { color: var(--muted); white-space: nowrap; }
+    .row span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    a[data-open] { color: var(--accent-color); text-decoration: none; cursor: pointer; }
+
+    .state { display: flex; align-items: center; justify-content: space-between; gap: .7em; flex: none; line-height: 1.2; }
+    .state .big { font-size: 1.5em; }
+    .toggle { width: 42px; height: 24px; border-radius: 12px; border: 0; background: var(--track); position: relative; cursor: pointer; flex: none; padding: 0; }
+    .toggle::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--content-color); transition: left .15s; }
+    .toggle[aria-checked=true] { background: var(--accent-color); }
+    .toggle[aria-checked=true]::after { left: 21px; background: var(--on-accent); }
+    .toggle.armed { outline: 2px solid var(--err); outline-offset: 2px; }
+    .chips { display: flex; gap: 5px; flex-wrap: wrap; flex: none; }
+
+    .devs { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 1em; flex: none; }
+    .dev { display: flex; align-items: center; gap: 6px; font-size: .82em; min-width: 0; line-height: 1.35; }
+    .dev span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dev[data-open] { cursor: pointer; }
+
+    .foot { margin-top: auto; display: flex; gap: .85em; align-items: center; font-size: .76em; color: var(--muted); white-space: nowrap; overflow: hidden; flex: none; }
+    .foot span { display: inline-flex; align-items: center; gap: 4px; }
+    .foot .ell { display: block; overflow: hidden; text-overflow: ellipsis; }
+    .foot .upd { color: var(--warn-text); margin-left: auto; }
+    .narrow .foot .upd { margin-left: 0; }
+    .empty { margin: auto; text-align: center; color: var(--muted); font-size: .9em; }
+</style>
+
+<div id="t"></div>
+
+<script>
+    // Initial state of the instance; afterwards the module pushes the complete state as JSON.
+    let state = /*INITIAL_STATE*/null;
+
+    const params = new URLSearchParams(window.location.search);
+    const px = (name, fallback) => {
+        const value = parseFloat(params.get(name));
+        return isNaN(value) ? fallback : value;
+    };
+    const padTop = px('margintop', 15), padSide = px('marginside', 15), padBottom = px('marginbottom', 15);
+    const box = document.getElementById('t');
+    box.style.padding = `${padTop}px ${padSide}px ${padBottom}px`;
+    // The visualization reserves a larger top margin when it draws a title bar itself.
+    if (padTop >= 40) {
+        document.body.classList.add('titled');
+    }
+    const accent = (params.get('accentcolor') || '00cdab').padStart(6, '0');
+    const accentValue = parseInt(accent, 16);
+    const luminance = (.299 * (accentValue >> 16) + .587 * (accentValue >> 8 & 255) + .114 * (accentValue & 255)) / 255;
+    document.documentElement.style.setProperty('--on-accent', luminance > .5 ? '#101114' : '#ffffff');
+
+    const T = (text) => (typeof translate === 'function' ? translate(text) : text);
+    // Names come from the network (e.g. DHCP host names) and must never be treated as markup.
+    const E = (text) => String(text ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const num = (value, digits = 0) => Number(value).toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+    const icon = (name) => `<i class="fa-light fa-${name}"></i>`;
+    const has = (value) => value !== undefined && value !== null && value !== '';
+    const clamp = (value) => Math.max(0, Math.min(100, Number(value) || 0));
+    const level = (value) => (value >= 90 ? 'err' : value >= 75 ? 'warn' : '');
+
+    function duration(seconds) {
+        const s = Math.max(0, Math.floor(seconds)), d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
+        if (d > 0) {
+            return `${d} ${T('d')} ${h} ${T('h')}`;
+        }
+        return h > 0 ? `${h} ${T('h')} ${m} ${T('min')}` : `${m} ${T('min')}`;
+    }
+    const since = (seconds) => T('since %s').replace('%s', duration(seconds));
+    const rate = (mbit) => (mbit < 1 ? `${num(mbit * 1000)} kbit/s` : `${num(mbit, 1)} Mbit/s`);
+    const speed = (mbps) => (mbps >= 1000 ? `${num(mbps / 1000, mbps % 1000 ? 1 : 0)} Gbit/s` : `${num(mbps)} Mbit/s`);
+
+    const head = (iconName, name, sub, status = 'ok') => `<div class="head">
+        <div class="ic">${icon(iconName)}<span class="dot ${status}"></span></div>
+        <div class="ht"><div class="name">${E(name)}</div><div class="sub"><span class="dot inline-dot ${status}"></span> ${E(sub)}</div></div>
+    </div>`;
+    const kpis = (items) => `<div class="kpis">${items.map(([value, label, cls = '']) => `<div class="kpi ${cls}"><div class="v">${value}</div><div class="l">${E(label)}</div></div>`).join('')}</div>`;
+    const bar = (label, percent, text) => `<div class="barx"><div class="r"><span>${E(label)}</span><span>${E(text ?? `${num(percent)} %`)}</span></div><div class="track"><i class="${level(percent)}" style="width:${clamp(percent)}%"></i></div></div>`;
+    const load = (d, attrs = '') => (has(d.cpu) || has(d.mem) ? `<div class="bars" ${attrs}>${bar('CPU', d.cpu || 0)}${bar('RAM', d.mem || 0)}</div>` : '');
+    function ring(label, percent) {
+        const c = 2 * Math.PI * 26;
+        return `<div class="ring"><svg width="62" height="62"><circle class="bg" cx="31" cy="31" r="26" fill="none" stroke-width="5"/><circle class="fg ${level(percent)}" cx="31" cy="31" r="26" fill="none" stroke-width="5" stroke-linecap="round" stroke-dasharray="${c * clamp(percent) / 100} ${c}"/></svg><div>${num(percent)}%<small>${E(label)}</small></div></div>`;
+    }
+    // Rows without a value are left out; the first visible row has no separator line.
+    const rows = (items) => `<div class="rows">${items.filter((r) => has(r[1])).map(([key, value, p], i) => `<div class="row ${i === 0 ? 'first' : ''}" ${p ? `data-p="${p}"` : ''}><span>${E(key)}</span><span>${value}</span></div>`).join('')}</div>`;
+    const link = (id, text) => (id > 0 ? `<a data-open="${Number(id)}">${E(text)} ›</a>` : E(text));
+
+    function port(p) {
+        const up = p.up === true;
+        const cls = ['p', up ? (p.speed >= 1000 ? 'g' : 'c') : '', p.conn !== 'RJ45' ? 'sfp' : '', up && p.poeOn ? 'poe' : ''].join(' ');
+        let text = `${T('Port')} ${p.idx}${p.conn !== 'RJ45' ? ` (${p.conn})` : ''}: ${up ? speed(p.speed) : T('free')}`;
+        if (p.poe) {
+            text += ` · PoE ${up && p.poeOn ? `${p.poe} ${T('active')}` : T('off')}`;
+        }
+        return `<button class="${cls}" title="${E(text)}" data-info="${E(text)}">${Number(p.idx)}</button>`;
+    }
+    function ports(list, attrs = '') {
+        const sorted = list.slice().sort((a, b) => a.idx - b.idx);
+        const copper = sorted.filter((p) => p.conn === 'RJ45'), other = sorted.filter((p) => p.conn !== 'RJ45');
+        return `<div class="ports" ${attrs}><div class="pg">${copper.map(port).join('')}</div>${other.length ? `<div class="pg">${other.map(port).join('')}</div>` : ''}</div>`;
+    }
+    const legend = (poe, attrs = '') => `<div class="info wide-only" data-legend ${attrs}><span><s style="background:var(--accent-color)"></s>≥ 1 Gbit/s</span><span><s style="background:var(--warn)"></s>100 Mbit/s</span><span><s style="background:var(--track)"></s>${E(T('free'))}</span>${poe ? '<span>• PoE</span>' : ''}</div>`;
+    const updateBadge = (text) => `<span class="upd">${icon('arrow-up-from-bracket')}${E(text)}</span>`;
+
+    function renderDevice(d) {
+        const list = d.ports || [], radios = d.radios || [];
+        const used = list.filter((p) => p.up).length;
+        const poeAll = list.filter((p) => p.poe).length, poeOn = list.filter((p) => p.up && p.poeOn).length;
+        const role = d.role || 'device';
+        const iconName = { gateway: 'router', ap: 'wifi', switch: 'ethernet' }[role] || 'circle-nodes';
+        const sub = [d.model !== d.name ? d.model : '', d.ip].filter(has).join(' · ');
+        const portKpi = list.length ? [`${used}<small> / ${list.length}</small>`, T('Ports used')] : null;
+        const foot = `<div class="foot" data-p="3">
+            ${has(d.tx) ? `<span class="wide-only" data-p="6">${icon('arrow-up')}${rate(d.tx)}</span><span class="wide-only" data-p="6">${icon('arrow-down')}${rate(d.rx)}</span>` : ''}
+            ${has(d.uptime) ? `<span class="wide-only">${icon('clock')}${duration(d.uptime)}</span>` : ''}
+            ${d.update ? updateBadge(T('Update')) : ''}</div>`;
+        let body = '';
+        if (role === 'gateway') {
+            body = `<div class="rings for-tall">${ring('CPU', d.cpu || 0)}${ring('RAM', d.mem || 0)}${portKpi ? kpis([portKpi]) : ''}</div>
+                <div class="for-short">${portKpi ? kpis([portKpi]) : ''}</div>
+                <div class="for-short">${load(d)}</div>
+                ${list.length ? ports(list, 'data-p="4"') + legend(false, 'data-p="5"') : ''}`;
+        } else {
+            const items = [];
+            if (portKpi) {
+                items.push(portKpi);
+            }
+            if (poeAll) {
+                items.push([`${poeOn}<small> / ${poeAll}</small>`, T('PoE active'), 'wide-only']);
+            }
+            items.push([num(d.clients ?? 0), T('Clients')]);
+            if (radios.length) {
+                items.push([num(radios.filter((r) => has(r.channel)).length), T('Radio bands active'), 'wide-only']);
+            }
+            body = kpis(items);
+            if (list.length) {
+                body += `<div class="wide-only">${ports(list, 'data-p="2"')}</div>${legend(poeAll > 0, 'data-p="5"')}`;
+            }
+            if (radios.length) {
+                body += `<div class="radios wide-only" data-p="2">${radios.map((r) => `<div class="radio"><span class="chip ${has(r.channel) ? 'on' : ''}">${num(r.ghz, r.ghz % 1 ? 1 : 0)} GHz</span>
+                    <div class="d"><div>${has(r.channel) ? `${E(T('Channel'))} ${Number(r.channel)} · ${Number(r.width)} MHz` : E(T('Off'))}</div><div class="s" data-p="4">${E(r.standard)}</div></div>
+                    ${has(r.retries) ? `<div class="rt" data-p="4">${num(r.retries, r.retries % 1 ? 1 : 0)} %<br>${E(T('Retries'))}</div>` : ''}</div>`).join('')}</div>`;
+            }
+            body += load(d, 'data-p="4"');
+        }
+        return head(iconName, d.name, sub, d.online === false ? 'err' : 'ok') + body + foot;
+    }
+
+    function renderClient(c) {
+        const online = c.online !== false;
+        const iconName = { WIRED: 'ethernet', WIRELESS: 'wifi', VPN: 'shield-halved', TELEPORT: 'shield-halved' }[c.type] || 'laptop';
+        const connection = { WIRED: 'LAN', WIRELESS: 'WLAN', VPN: 'VPN', TELEPORT: 'Teleport' }[c.type] || c.type;
+        const elapsed = online ? (c.connectedAt ? Date.now() / 1000 - c.connectedAt : null) : (c.offlineAt ? Date.now() / 1000 - c.offlineAt : null);
+        const sub = online ? c.ip : (has(c.ip) ? `${T('Last')} ${c.ip}` : '');
+        return head(iconName, c.name, sub, online ? 'ok' : 'err')
+            + `<div class="state"><div><span class="big ${online ? 'txtok' : 'txterr'}">${E(T(online ? 'Online' : 'Offline'))}</span>${elapsed !== null ? `<div class="sub">${E(since(elapsed))}</div>` : ''}</div></div>`
+            + rows([
+                [T('Via'), online && has(c.uplink) ? link(c.uplinkId, c.uplink) : (online ? '' : '–')],
+                [T('Connection'), online ? E(connection) : '–', 3],
+                [T('MAC'), E(c.mac), 5],
+                [T('Access'), online ? E(c.access === 'DEFAULT' ? T('Standard') : c.access) : '', 5]
+            ]);
+    }
+
+    const securityLabels = {
+        OPEN: 'Open', WPA2_PERSONAL: 'WPA2 Personal', WPA3_PERSONAL: 'WPA3 Personal', WPA2_WPA3_PERSONAL: 'WPA2 + WPA3 Personal',
+        WPA2_ENTERPRISE: 'WPA2 Enterprise', WPA3_ENTERPRISE: 'WPA3 Enterprise', WPA2_WPA3_ENTERPRISE: 'WPA2 + WPA3 Enterprise'
+    };
+    const onOff = (value) => (value === undefined || value === null ? '' : E(T(value ? 'On' : 'Off')));
+
+    function renderWifi(w) {
+        const enabled = w.enabled === true;
+        return head('wifi', w.name, T(w.type === 'IOT_OPTIMIZED' ? 'IoT-Optimized' : 'Standard'), enabled ? 'ok' : 'err')
+            + `<div class="state"><span class="big" id="wifiState">${E(T(enabled ? 'Active' : 'Inactive'))}</span><button class="toggle" role="switch" aria-checked="${enabled}" aria-label="WLAN"></button></div>`
+            + `<div class="chips" data-p="3">${(w.bands || []).map((b) => `<span class="chip on">${E(String(b).replace('.', (1.5).toLocaleString().charAt(1)))} GHz</span>`).join('')}</div>`
+            + rows([
+                [T('Security'), E(T(securityLabels[w.security] || w.security || ''))],
+                [T('Band Steering'), onOff(w.bandSteering), 5],
+                [T('Fast Roaming'), onOff(w.fastRoaming), 5],
+                [T('Client Isolation'), onOff(w.isolation), 5],
+                [T('Hidden Name'), onOff(w.hidden), 6]
+            ]);
+    }
+
+    function renderNetwork(n) {
+        const typeLabel = T({ GATEWAY: 'Gateway', SWITCH: 'Switch' }[n.type] || 'Unmanaged');
+        const items = [[num(n.vlan ?? 0), T('VLAN')]];
+        if (has(n.clients)) {
+            items.push([num(n.clients), T('Clients')]);
+        }
+        if (has(n.dhcp)) {
+            items.push([E(n.dhcp === 'SERVER' ? T('Server') : T('Relay')), 'DHCP', 'wide-only']);
+        }
+        let usage = '';
+        if (has(n.clients) && n.hosts > 0) {
+            usage = bar(`${T('IP usage')} (/${Number(n.prefix)})`, n.clients / n.hosts * 100, `${num(n.clients)} / ${num(n.hosts)}`);
+        }
+        return head('diagram-project', n.name, `${typeLabel} · ${T(n.enabled ? 'Active' : 'Inactive')}`, n.enabled ? 'ok' : 'err')
+            + kpis(items) + usage
+            + rows([
+                [T('Gateway'), has(n.host) ? E(`${n.host}/${n.prefix}`) : '', 3],
+                [T('DHCP Range'), has(n.rangeStart) ? E(`${n.rangeStart} – ${n.rangeStop}`) : '', 5],
+                [T('Domain'), E(n.domain), 5],
+                [T('Internet'), onOff(n.internet), 5]
+            ]);
+    }
+
+    function renderSite(s) {
+        const devices = s.devices || [];
+        const online = devices.filter((d) => d.online).length, updates = devices.filter((d) => d.update).length;
+        const sub = [has(s.version) ? `Network ${s.version}` : '', s.address].filter(has).join(' · ');
+        return head('sitemap', 'UniFi Network', sub, s.error ? 'err' : (online < devices.length ? 'warn' : 'ok'))
+            + kpis([
+                [`${online}<small> / ${devices.length}</small>`, T('Devices online')],
+                [num(s.clients ?? 0), T('Clients')],
+                [num(updates), T('Updates'), 'wide-only']
+            ])
+            + `<div class="devs wide-only" data-p="4">${devices.map((d) => `<div class="dev" ${d.id > 0 ? `data-open="${Number(d.id)}"` : ''}><span class="dot ${!d.online ? 'err' : d.update ? 'warn' : 'ok'}"></span><span>${E(d.name)}</span></div>`).join('')}</div>`
+            + `<div class="foot" data-p="3">${(s.wans || []).length ? `<span class="ell wide-only">WAN: ${(s.wans || []).map(E).join(', ')}</span>` : ''}${updates ? updateBadge(`${num(updates)} ${T(updates === 1 ? 'Update' : 'Updates')}`) : ''}</div>`;
+    }
+
+    const renderers = { device: renderDevice, client: renderClient, wifi: renderWifi, network: renderNetwork, site: renderSite };
+
+    function render() {
+        if (!state || !state.kind) {
+            return;
+        }
+        if (!state.name && state.kind !== 'site' || (state.kind === 'site' && !state.devices)) {
+            box.innerHTML = `<div class="empty">${E(T(state.inactive ? 'Instance inactive' : 'No data yet'))}</div>`;
+            return;
+        }
+        clearTimeout(portTimer);
+        legendHTML = null;
+        box.innerHTML = renderers[state.kind](state);
+        box.classList.toggle('off', state.online === false);
+        fit();
+    }
+
+    // Fits the content into the tile: first the size classes and the port grid, then everything
+    // that is marked with data-p is hidden, the highest number first, until nothing overflows.
+    function fit() {
+        const width = box.clientWidth - padSide * 2, height = box.clientHeight - padTop - padBottom;
+        document.body.classList.toggle('narrow', width < 200);
+        document.body.classList.toggle('short', height < 200);
+        box.querySelectorAll('.hid').forEach((e) => e.classList.remove('hid'));
+        const fontSize = parseFloat(getComputedStyle(document.body).fontSize) || 14;
+        box.querySelectorAll('.ports').forEach((ports) => {
+            const groups = [...ports.querySelectorAll('.pg')];
+            const columns = groups.reduce((sum, group) => sum + Math.ceil(group.children.length / 2), 0);
+            const gaps = groups.reduce((sum, group) => sum + (Math.ceil(group.children.length / 2) - 1) * 3, 0) + (groups.length - 1) * 9;
+            const size = Math.min(fontSize * 1.72, Math.floor((width - gaps) / Math.max(columns, 1)));
+            ports.style.setProperty('--p', `${Math.max(size, 6)}px`);
+            ports.classList.toggle('nodigits', size < 21 || height < 200);
+        });
+        const overflow = () => box.scrollHeight > box.clientHeight + 1;
+        const steps = [...new Set([...box.querySelectorAll('[data-p]')].map((e) => Number(e.dataset.p)))].sort((a, b) => b - a);
+        for (const step of steps) {
+            if (!overflow()) {
+                break;
+            }
+            const items = [...box.querySelectorAll(`[data-p="${step}"]`)].reverse();
+            for (const item of items) {
+                if (!overflow()) {
+                    break;
+                }
+                item.classList.add('hid');
+            }
+        }
+    }
+
+    window.handleMessage = (data) => {
+        state = typeof data === 'string' ? JSON.parse(data) : data;
+        render();
+    };
+
+    // The details of a port replace the legend until the port or the tile is tapped again,
+    // or until they time out, because a touch display has no way of leaving a selection.
+    let portTimer = null;
+    let legendHTML = null;
+    function clearPortInfo() {
+        clearTimeout(portTimer);
+        box.querySelectorAll('.p.sel').forEach((p) => p.classList.remove('sel'));
+        const info = box.querySelector('[data-legend]');
+        if (info && legendHTML !== null) {
+            info.innerHTML = legendHTML;
+        }
+        legendHTML = null;
+    }
+    function showPortInfo(portButton) {
+        const info = box.querySelector('[data-legend]');
+        portButton.classList.add('sel');
+        if (info) {
+            legendHTML = info.innerHTML;
+            info.innerHTML = `<span class="now">${E(portButton.dataset.info)}</span>`;
+        }
+        portTimer = setTimeout(clearPortInfo, 10000);
+    }
+
+    let armTimer = null;
+    box.addEventListener('click', (event) => {
+        const portButton = event.target.closest('.p');
+        const wasSelected = portButton && portButton.classList.contains('sel');
+        clearPortInfo();
+        if (portButton) {
+            if (!wasSelected) {
+                showPortInfo(portButton);
+            }
+            return;
+        }
+        const target = event.target.closest('[data-open]');
+        if (target) {
+            if (typeof openObject === 'function') {
+                openObject(Number(target.dataset.open));
+            }
+            return;
+        }
+        const toggle = event.target.closest('.toggle');
+        if (toggle) {
+            const enabled = toggle.getAttribute('aria-checked') === 'true';
+            // Switching a WLAN off can cut the connection to this very display: ask once more.
+            if (enabled && !toggle.classList.contains('armed')) {
+                toggle.classList.add('armed');
+                document.getElementById('wifiState').textContent = T('Tap again to deactivate');
+                fit();
+                clearTimeout(armTimer);
+                armTimer = setTimeout(render, 4000);
+                return;
+            }
+            clearTimeout(armTimer);
+            toggle.classList.remove('armed');
+            toggle.setAttribute('aria-checked', String(!enabled));
+            document.getElementById('wifiState').textContent = T(enabled ? 'Inactive' : 'Active');
+            requestAction('WifiEnabled', !enabled);
+        }
+    });
+
+    window.addEventListener('resize', fit);
+    if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(fit);
+    }
+    // Durations of clients are calculated here, so that they keep running between two updates.
+    setInterval(() => {
+        if (state && state.kind === 'client') {
+            render();
+        }
+    }, 60000);
+    render();
+</script>

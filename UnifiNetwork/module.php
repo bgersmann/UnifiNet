@@ -2,10 +2,14 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/../libs/UnifiTile.php';
+
 // CLASS UnifiNetwork
 class UnifiNetwork extends IPSModuleStrict
 {
-    private const COLOR_GREEN = 1692672;
+    use UnifiTile;
+
+private const COLOR_GREEN = 1692672;
     private const COLOR_RED = 16077123;
 
     public function GetCompatibleParents(): string
@@ -25,7 +29,8 @@ class UnifiNetwork extends IPSModuleStrict
         $this->RegisterPropertyString( 'ID', '' );
         $this->RegisterPropertyInteger( 'Timer', 0 );
 		$this->RegisterTimer( 'Collect Data', 0, "UNIFINW_Send(\$_IPS['TARGET'],'getNetworkDetails','');" );
-    }
+		$this->SetVisualizationType(INSTANCE_VISUALIZATION_TYPE_HTML);
+}
 
 
     public function Destroy(): void
@@ -52,8 +57,12 @@ class UnifiNetwork extends IPSModuleStrict
 						$this->SetBuffer("Networks", $siteData);
                         $this->SendDebug("UnifiNW", "Get Network Data: " . $siteData, 0);
 						break;
-                    case "getNetworkDetails":                       
-                       $JSONData=unserialize($data);
+                    case "getClientCountInSubnet":
+                       $count = unserialize($data);
+                       $this->TileUpdate( [ 'clients' => ( is_int($count) && $count >= 0 ) ? $count : null ] );
+                       break;
+                    case "getNetworkDetails":
+$JSONData=unserialize($data);
 						if ( is_array( $JSONData ) && isset( $JSONData ) ) {
 							if (isset($JSONData['code']) && $JSONData['code']==600) {
 								// UniFi Network Version zu alt. Erst ab 10+ verfügbar
@@ -89,8 +98,14 @@ class UnifiNetwork extends IPSModuleStrict
                                 } else {
                                     $this->SetValue( 'NetworkMode', 'DHCP Relay' );
                                 }
-                            }         
-                        }
+                            }
+                            $tile = $this->TileNetwork( $JSONData, $type );
+                            $this->TileUpdate( $tile );
+                            // The client count needs a second request, the tile is complete without it.
+                            if ( $tile[ 'hosts' ] > 0 ) {
+                                $this->Send( 'getClientCountInSubnet', $tile[ 'host' ] . '/' . $tile[ 'prefix' ] );
+                            }
+}
                         break;
                     }
 			}
@@ -130,8 +145,9 @@ class UnifiNetwork extends IPSModuleStrict
     public function ApplyChanges(): void
     {
        parent::ApplyChanges();
+       $this->SetVisualizationType(INSTANCE_VISUALIZATION_TYPE_HTML);
         $vpos = 100;
-        $this->MaintainVariable( 'NetworkName', $this->Translate( 'Network Name' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, 1 );
+$this->MaintainVariable( 'NetworkName', $this->Translate( 'Network Name' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, 1 );
 		$this->MaintainVariable(
 			'NetworkType',
 			$this->Translate('Type'),
@@ -206,8 +222,41 @@ class UnifiNetwork extends IPSModuleStrict
 
 
     
-    public function RequestAction(string $Ident, mixed $Value): void
+    private function TileKind(): string
     {
+        return 'network';
+    }
+
+    private function TileRefresh(): void
+    {
+        $this->Send('getNetworkDetails','');
+    }
+
+    /** Displayed fields of the network. */
+    private function TileNetwork(array $network, string $type): array
+    {
+        $ipv4 = $network[ 'ipv4Configuration' ] ?? [];
+        $dhcp = $ipv4[ 'dhcpConfiguration' ] ?? [];
+        $host = (string) ( $ipv4[ 'hostIpAddress' ] ?? '' );
+        $prefix = (int) ( $ipv4[ 'prefixLength' ] ?? 0 );
+        return [
+            'name' => (string) ( $network[ 'name' ] ?? 'Default' ),
+            'type' => $type,
+            'enabled' => (bool) ( $network[ 'enabled' ] ?? false ),
+            'vlan' => (int) ( $network[ 'vlanId' ] ?? 0 ),
+            'host' => $host,
+            'prefix' => $prefix,
+            'hosts' => ( $host !== '' && $prefix >= 8 && $prefix <= 30 ) ? ( 2 ** ( 32 - $prefix ) ) - 2 : 0,
+            'dhcp' => (string) ( $dhcp[ 'mode' ] ?? '' ),
+            'rangeStart' => (string) ( $dhcp[ 'ipAddressRange' ][ 'start' ] ?? '' ),
+            'rangeStop' => (string) ( $dhcp[ 'ipAddressRange' ][ 'stop' ] ?? '' ),
+            'domain' => (string) ( $dhcp[ 'domainName' ] ?? '' ),
+            'internet' => $network[ 'internetAccessEnabled' ] ?? null
+        ];
+    }
+
+    public function RequestAction(string $Ident, mixed $Value): void
+{
         // Debug output
         $this->SendDebug(__FUNCTION__, $Ident . ' => ' . json_encode($Value), 0);
         // Switching a network on or off is deliberately not implemented: the API rejects the

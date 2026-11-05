@@ -2,8 +2,12 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/../libs/UnifiTile.php';
+
 class UnifiClient extends IPSModuleStrict
 {
+    use UnifiTile;
+
     private const COLOR_GREEN = 1692672;
     private const COLOR_RED = 16077123;
 
@@ -22,6 +26,7 @@ class UnifiClient extends IPSModuleStrict
 		$this->RegisterPropertyBoolean("MACAnzeigen", 0);
 		$this->RegisterPropertyBoolean("IDAnzeigen", 0);
         $this->RegisterTimer('Collect Data', 0, "UNIFICL_Send(\$_IPS['TARGET'],'getClientData','');");
+        $this->SetVisualizationType(INSTANCE_VISUALIZATION_TYPE_HTML);
     }
 
     public function Destroy(): void
@@ -34,6 +39,7 @@ class UnifiClient extends IPSModuleStrict
 		{
 			//Never delete this line!
 			parent::ApplyChanges();
+			$this->SetVisualizationType(INSTANCE_VISUALIZATION_TYPE_HTML);
 			$vpos = 100;
 			$this->MaintainVariable( 'ClientName', $this->Translate( 'Client Name' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, 1 );
 			$this->MaintainVariable( 'ID', $this->Translate( 'Client ID' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, $this->ReadPropertyBoolean("IDAnzeigen") );
@@ -94,11 +100,13 @@ class UnifiClient extends IPSModuleStrict
 								$this->SendDebug("UnifiCL", "Device Offline: " . json_encode($array), 0);
 								$this->SetValue( 'Online', false );
 								$this->SetValue( 'UplinkDevice', '-');
+								$this->TileOffline();
 							} else {
 								// instance inactive
 								$this->SendDebug("UnifiCL", "Request failed: " . json_encode($array), 0);
 								$this->SetValue( 'Online', false );
 								$this->SetValue( 'UplinkDevice', '-');
+								$this->TileOffline();
 								$this->SetStatus( $array[ 'statusCode' ] );
 							}
 						}	
@@ -107,6 +115,17 @@ class UnifiClient extends IPSModuleStrict
 							if ( isset( $array[ 'statusCode' ] ) ) {
 								$this->SetValue( 'Online', false );
 							} else {
+								$this->TileUpdate( [
+									'name' => (string) $array[ 'name' ],
+									'type' => (string) ( $array[ 'type' ] ?? '' ),
+									'ip' => (string) ( $array[ 'ipAddress' ] ?? '' ),
+									'mac' => (string) ( $array[ 'macAddress' ] ?? '' ),
+									'access' => (string) ( $array[ 'access' ][ 'type' ] ?? '' ),
+									'connectedAt' => strtotime( (string) ( $array[ 'connectedAt' ] ?? '' ) ) ?: null,
+									'online' => true,
+									'uplinkId' => $this->TileDeviceInstance( (string) ( $array[ 'uplinkDeviceId' ] ?? '' ) ),
+									'uplink' => isset( $array[ 'uplinkDeviceId' ] ) ? ( $this->TileReadState()[ 'uplink' ] ?? '' ) : ''
+								] );
 								$this->SetValue( 'ClientName', $array[ 'name' ] );
 								if ($this->ReadPropertyBoolean("IDAnzeigen")) {
 									$this->SetValue( 'ID', $array[ 'id' ] );
@@ -131,6 +150,7 @@ class UnifiClient extends IPSModuleStrict
 						$data=unserialize($data);
 						$this->SendDebug("UnifiCL", $data, 0);
 						$this->SetValue( 'UplinkDevice', $data);
+						$this->TileUpdate( [ 'uplink' => (string) $data ] );
 						break;
 
 				}
@@ -176,4 +196,40 @@ class UnifiClient extends IPSModuleStrict
 			return JSON_encode( array( 'status' => $arrayStatus, 'elements' => $arrayElements, 'actions' => $arrayActions ) );
 			
     	}
+
+		private function TileKind(): string
+		{
+			return 'client';
+		}
+
+		private function TileRefresh(): void
+		{
+			$this->Send('getClientData','');
+		}
+
+		/** An offline client is unknown to the API: name and IP stay, the rest is reset. */
+		private function TileOffline(): void
+		{
+			$values = [ 'online' => false, 'uplink' => '', 'uplinkId' => 0, 'offlineAt' => IPS_GetVariable( $this->GetIDForIdent( 'Online' ) )[ 'VariableChanged' ] ];
+			if ( !isset( $this->TileReadState()[ 'name' ] ) ) {
+				$values[ 'name' ] = $this->GetValue( 'ClientName' ) !== '' ? $this->GetValue( 'ClientName' ) : IPS_GetName( $this->InstanceID );
+				$values[ 'ip' ] = $this->GetValue( 'ClientIP' );
+			}
+			$this->TileUpdate( $values );
+		}
+
+		/** Instance of the uplink device, so that the tile can open it. */
+		private function TileDeviceInstance( string $deviceID ): int
+		{
+			if ( $deviceID === '' ) {
+				return 0;
+			}
+			$connection = IPS_GetInstance( $this->InstanceID )[ 'ConnectionID' ];
+			foreach ( IPS_GetInstanceListByModuleID( '{19A9D2AF-BD00-461A-58E1-7BF7A0CA19A6}' ) as $instanceID ) {
+				if ( IPS_GetProperty( $instanceID, 'ID' ) === $deviceID && IPS_GetInstance( $instanceID )[ 'ConnectionID' ] === $connection ) {
+					return $instanceID;
+				}
+			}
+			return 0;
+		}
 	}

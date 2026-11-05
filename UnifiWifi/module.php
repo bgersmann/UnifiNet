@@ -2,10 +2,14 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/../libs/UnifiTile.php';
+
 // CLASS UnifiWifi
 class UnifiWifi extends IPSModuleStrict
 {
-    private const COLOR_GREEN = 1692672;
+    use UnifiTile;
+
+private const COLOR_GREEN = 1692672;
     private const COLOR_RED = 16077123;
 
     public function GetCompatibleParents(): string
@@ -21,7 +25,8 @@ class UnifiWifi extends IPSModuleStrict
 		$this->RegisterPropertyString( 'ID', '' );
         $this->RegisterPropertyInteger( 'Timer', 0 );
 		$this->RegisterTimer( 'Collect Data', 0, "UNIFIWF_Send(\$_IPS['TARGET'],'getWifiDetails','');" );
-    }
+		$this->SetVisualizationType(INSTANCE_VISUALIZATION_TYPE_HTML);
+}
 
     public function Destroy(): void
     {
@@ -57,8 +62,11 @@ class UnifiWifi extends IPSModuleStrict
 							} else {
 								$this->SetStatus( 102 );
 							}
-							$this->SendDebug("UnifiWF", json_encode($JSONData), 0);
-                            $type= (( isset($JSONData[ 'type' ]) ) ? $JSONData[ 'type' ] : 'STANDARD');
+							// The response contains the WLAN passphrase, which must not reach the debug output.
+							$debugData = $JSONData;
+							unset( $debugData[ 'securityConfiguration' ][ 'passphrase' ] );
+							$this->SendDebug("UnifiWF", json_encode($debugData), 0);
+$type= (( isset($JSONData[ 'type' ]) ) ? $JSONData[ 'type' ] : 'STANDARD');
 							$this->SetValue( 'WifiName', (( isset($JSONData[ 'name' ]) ) ? $JSONData[ 'name' ] : 'Default') );
 							$this->SetValue( 'WifiEnabled',  (( isset($JSONData[ 'enabled' ]) ) ? $JSONData[ 'enabled' ] : false)  );
 							$this->SetValue( 'WifiType', $type);
@@ -81,8 +89,20 @@ class UnifiWifi extends IPSModuleStrict
 								}, $bands);
 								$frequenciesValue = implode('|', $normalized);
 							}
-							$this->SetValue('WifiFrequencies', $frequenciesValue);							
-						}
+							$this->SetValue('WifiFrequencies', $frequenciesValue);
+							// Only these fields reach the tile: never pass the passphrase on.
+							$this->TileUpdate( [
+								'name' => (string) ( $JSONData[ 'name' ] ?? 'Default' ),
+								'type' => $type,
+								'enabled' => (bool) ( $JSONData[ 'enabled' ] ?? false ),
+								'security' => (string) ( $JSONData[ 'securityConfiguration' ][ 'type' ] ?? '' ),
+								'bands' => $frequenciesValue === '' ? [] : explode( '|', $frequenciesValue ),
+								'bandSteering' => $JSONData[ 'bandSteeringEnabled' ] ?? null,
+								'fastRoaming' => $JSONData[ 'securityConfiguration' ][ 'fastRoamingEnabled' ] ?? null,
+								'isolation' => $JSONData[ 'clientIsolationEnabled' ] ?? null,
+								'hidden' => $JSONData[ 'hideName' ] ?? null
+							] );
+}
                         break;
                     }
 			}
@@ -125,8 +145,9 @@ class UnifiWifi extends IPSModuleStrict
     public function ApplyChanges(): void
     {
         parent::ApplyChanges();
+        $this->SetVisualizationType(INSTANCE_VISUALIZATION_TYPE_HTML);
         $vpos = 100;
-        $this->MaintainVariable( 'WifiName', $this->Translate( 'Name' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, 1 );
+$this->MaintainVariable( 'WifiName', $this->Translate( 'Name' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, 1 );
 		$this->MaintainVariable(
 			'WifiType',
 			$this->Translate('Type'),
@@ -240,8 +261,18 @@ class UnifiWifi extends IPSModuleStrict
         return;
     }
 
-	private function buildWifiUpdateJson(bool $enabled): string
+	private function TileKind(): string
 	{
+		return 'wifi';
+	}
+
+	private function TileRefresh(): void
+	{
+		$this->Send('getWifiDetails','');
+	}
+
+	private function buildWifiUpdateJson(bool $enabled): string
+{
 		if (!$this->HasActiveParent()) {
 			$this->SendDebug(__FUNCTION__, 'No parent instance connected', 0);
 			return '';

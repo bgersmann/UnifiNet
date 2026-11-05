@@ -66,7 +66,7 @@ Keine vorhanden. Die Darstellung erfolgt über Variablen-Presentations.
 
 ### 6. Visualisierung
 
-Keine besondere Funktionalität. Die Statusvariablen können direkt in der Visualisierung verwendet werden.
+Die Instanz bringt eine eigene Statuskachel mit: VLAN, Clients im Subnetz, IP-Belegung, Gateway und DHCP-Einstellungen. Die Statusvariablen können weiterhin direkt verwendet werden.
 
 ### 7. PHP-Befehlsreferenz
 

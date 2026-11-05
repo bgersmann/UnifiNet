@@ -2,9 +2,13 @@
 
 declare( strict_types = 1 );
 
+require_once __DIR__ . '/../libs/UnifiTile.php';
+
 class UnifiGateway extends IPSModuleStrict
 {
-    private const CONNECT_TIMEOUT = 5;
+    use UnifiTile;
+
+private const CONNECT_TIMEOUT = 5;
     private const REQUEST_TIMEOUT = 15;
     private const HIERARCHY_ROOT_ID = 'site';
 
@@ -22,7 +26,10 @@ class UnifiGateway extends IPSModuleStrict
         $this->RegisterPropertyBoolean('hierarchyClients', 0);
         $this->RegisterTimer( 'Update Version', 0, "UNIFIGW_UpdateApplicationVersion(\$_IPS['TARGET']);" );
         $this->RegisterTimer( 'Update Hierarchy', 0, "UNIFIGW_UpdateNetworkHierarchy(\$_IPS['TARGET']);" );
-    }
+        $this->RegisterPropertyInteger( 'TileTimer', 60 );
+        $this->RegisterTimer( 'Update Tile', 0, "UNIFIGW_UpdateTile(\$_IPS['TARGET']);" );
+        $this->SetVisualizationType(INSTANCE_VISUALIZATION_TYPE_HTML);
+}
 
     public function Destroy(): void
     {
@@ -34,14 +41,16 @@ class UnifiGateway extends IPSModuleStrict
     {
         //Never delete this line!
         parent::ApplyChanges();
+        $this->SetVisualizationType(INSTANCE_VISUALIZATION_TYPE_HTML);
         $vpos = 100;
-        $APIKey = $this->ReadPropertyString( 'APIKey' );
+$APIKey = $this->ReadPropertyString( 'APIKey' );
         $this->MaintainVariable( 'applicationVersion', $this->Translate( 'Application Version' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, $this->ReadPropertyBoolean("applicationVersion") );
         $this->MaintainVariable( 'networkHierarchy', $this->Translate( 'Network Hierarchy' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'sitemap'], $vpos++, $this->ReadPropertyBoolean("networkHierarchy") );
         $active = !empty($APIKey);
         $this->SetTimerInterval( 'Update Version', ($active && $this->ReadPropertyBoolean("applicationVersion")) ? $this->ReadPropertyInteger( 'VersionTimer' ) * 1000 : 0 );
         $this->SetTimerInterval( 'Update Hierarchy', ($active && $this->ReadPropertyBoolean("networkHierarchy")) ? $this->ReadPropertyInteger( 'HierarchyTimer' ) * 1000 : 0 );
-        if (empty($APIKey))
+        $this->SetTimerInterval( 'Update Tile', $active ? $this->ReadPropertyInteger( 'TileTimer' ) * 1000 : 0 );
+if (empty($APIKey))
 		{
 		    // instance inactive
 			$this->SetStatus( 104 );
@@ -94,8 +103,82 @@ class UnifiGateway extends IPSModuleStrict
         $this->SetStatus( 102 );
     }
 
-    private function storeApplicationVersion( string $version ): void
+    /** Updates the overview of the site in the tile of this instance. */
+    public function UpdateTile(): void
     {
+        $site = $this->ReadPropertyString( 'Site' );
+        $siteID = $this->getSiteID( $site );
+        $response = $this->getApiData( '/'.$siteID.'/devices?limit=200' );
+        if ( !isset( $response[ 'data' ] ) || !is_array( $response[ 'data' ] ) ) {
+            $this->TileUpdate( [ 'error' => true ] );
+            return;
+        }
+        $devices = [];
+        foreach ( $response[ 'data' ] as $device ) {
+            $devices[] = [
+                'name' => (string) ( $device[ 'name' ] ?? '' ),
+                'online' => ( $device[ 'state' ] ?? '' ) === 'ONLINE',
+                'update' => (bool) ( $device[ 'firmwareUpdatable' ] ?? false ),
+                'id' => $this->getInstanceIDForGuid( (string) ( $device[ 'id' ] ?? '' ), '{19A9D2AF-BD00-461A-58E1-7BF7A0CA19A6}' )
+            ];
+        }
+        usort( $devices, function ( $a, $b ) {
+            return strcmp( $a[ 'name' ], $b[ 'name' ] );
+        } );
+        $clients = $this->getApiData( '/'.$siteID.'/clients?limit=1' );
+        $wans = $this->getSiteWans( $site );
+        $this->TileUpdate( [
+            'error' => false,
+            'address' => $this->ReadPropertyString( 'ServerAddress' ),
+            'version' => $this->getNetworkVersion(),
+            'clients' => (int) ( $clients[ 'totalCount' ] ?? 0 ),
+            'devices' => $devices,
+            'wans' => array_column( $wans[ 'data' ] ?? [], 'name' )
+        ] );
+    }
+
+    /** Number of connected clients with an IPv4 address in the given subnet (a.b.c.d/prefix). */
+    private function getClientCountInSubnet( string $subnet ): int
+    {
+        [ $network, $prefix ] = array_pad( explode( '/', $subnet ), 2, '' );
+        $networkLong = ip2long( $network );
+        if ( $networkLong === false || !is_numeric( $prefix ) ) {
+            return -1;
+        }
+        $mask = (int) $prefix === 0 ? 0 : ( ~0 << ( 32 - (int) $prefix ) ) & 0xFFFFFFFF;
+        $siteID = $this->getSiteID( $this->ReadPropertyString( 'Site' ) );
+        $response = $this->getApiData( '/'.$siteID.'/clients?limit=500' );
+        if ( !isset( $response[ 'data' ] ) || !is_array( $response[ 'data' ] ) ) {
+            return -1;
+        }
+        $count = 0;
+        foreach ( $response[ 'data' ] as $client ) {
+            $ip = ip2long( (string) ( $client[ 'ipAddress' ] ?? '' ) );
+            if ( $ip !== false && ( $ip & $mask ) === ( $networkLong & $mask ) ) {
+                $count++;
+            }
+        }
+        return $count;
+    }
+
+    private function TileKind(): string
+    {
+        return 'site';
+    }
+
+    private function TileRefresh(): void
+    {
+        $this->UpdateTile();
+    }
+
+    /** The WLAN passphrase must not reach the debug output. */
+    private function maskSecrets( string $json ): string
+    {
+        return (string) preg_replace( '/("passphrase"\s*:\s*")(?:[^"\\\\]|\\\\.)*"/', '$1***"', $json );
+    }
+
+    private function storeApplicationVersion( string $version ): void
+{
         if ($version !== '' && $version !== 'notfound') {
             $this->SetValue( 'applicationVersion', $version );
         }
@@ -321,9 +404,12 @@ class UnifiGateway extends IPSModuleStrict
                     $jsonString = $this->setRestartDevice(IPS_GetProperty( $data->InstanceID, 'ID' ));
                     return serialize($jsonString);
                     break;
+                case "getClientCountInSubnet":
+                    return serialize( isset( $data->Param1 ) ? $this->getClientCountInSubnet( (string) $data->Param1 ) : -1 );
+                    break;
                 case "getSites":
 					$array = $this->getSites();
-					return serialize($array);
+return serialize($array);
 					break;
 
 			}
@@ -368,6 +454,7 @@ class UnifiGateway extends IPSModuleStrict
         $arrayElements[] = array( 'type' => 'NumberSpinner', 'name' => 'HierarchyTimer', 'caption' => $this->Translate('Hierarchy update interval (s) -> 0=Off'), 'minimum' => 0, 'enabled' => $this->ReadPropertyBoolean("networkHierarchy") );
         $arrayElements[] = array( 'type' => 'CheckBox', 'name' => 'hierarchyClients', 'caption' => $this->Translate('Include clients in the hierarchy'), 'enabled' => $this->ReadPropertyBoolean("networkHierarchy") );
         $arrayElements[] = array( 'type' => 'Select', 'name' => 'Site', 'caption' => 'Site', 'options' => $arrayOptions );
+        $arrayElements[] = array( 'type' => 'NumberSpinner', 'name' => 'TileTimer', 'caption' => $this->Translate('Tile update interval (s) -> 0=Off'), 'minimum' => 0 );
 
         if ( !empty( $APIKey ) && $this->GetStatus() === 102 ) {
             $version = $this->getNetworkVersion();
@@ -460,7 +547,7 @@ class UnifiGateway extends IPSModuleStrict
 					return [];
 				}        
 			}
-			$this->SendDebug("UnifiGW", "GetApiDataPost: " . $RawData, 0);
+			$this->SendDebug("UnifiGW", "GetApiDataPost: " . $this->maskSecrets( (string) $RawData ), 0);
 			return [];
 		}
 
@@ -501,7 +588,7 @@ class UnifiGateway extends IPSModuleStrict
                     return [];
                 }
             }
-            $this->SendDebug("UnifiGW", "GetApiDataPut: " . $RawData, 0);
+            $this->SendDebug("UnifiGW", "GetApiDataPut: " . $this->maskSecrets( (string) $RawData ), 0);
             return [];
         }
 
@@ -518,7 +605,7 @@ class UnifiGateway extends IPSModuleStrict
         $siteID = $this->getSiteID( $site );
         $JSONData=$this->getApiData('/'.$siteID.'/wifi/broadcasts');
         $value = [];
-        $this->SendDebug("UnifiGW", "getSiteWifis: " .json_encode($JSONData) , 0);
+        $this->SendDebug("UnifiGW", "getSiteWifis: " . $this->maskSecrets( (string) json_encode($JSONData) ) , 0);
         if ( is_array( $JSONData ) && isset( $JSONData ) ) {
             if ( isset( $JSONData['error'] ) ) {
                 if ($JSONData['error']['code']<> 200) {
@@ -775,7 +862,7 @@ class UnifiGateway extends IPSModuleStrict
     public function updateWifiSettings(string $wifiID, string $jsonPayload):string {
         $site = $this->ReadPropertyString( 'Site' );
         $siteID = $this->getSiteID( $site );
-        $this->SendDebug("UnifiGW", "updateWifiSettings: " . $jsonPayload, 0);
+        $this->SendDebug("UnifiGW", "updateWifiSettings: " . $this->maskSecrets( $jsonPayload ), 0);
         $this->SendDebug("UnifiGW", "updateWifiSettings: " . '/'.$siteID.'/wifi/broadcasts/'.$wifiID.'/', 0);
         $JSONData=$this->getApiDataPut( '/'.$siteID.'/wifi/broadcasts/'.$wifiID, $jsonPayload );
         return json_encode($JSONData);

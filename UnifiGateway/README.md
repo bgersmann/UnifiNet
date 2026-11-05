@@ -78,7 +78,7 @@ Keine vorhanden.
 
 ### 6. Visualisierung
 
-Keine vorhanden. Die Instanz dient ausschließlich als Schnittstelle.
+Die Instanz bringt eine eigene Statuskachel als Überblick über die Site mit: Geräte online, Clients, verfügbare Updates, Geräteliste und WAN-Namen. Das Intervall wird über "Kachel-Aktualisierung" eingestellt (0 = aus).
 
 ### 7. PHP-Befehlsreferenz
 

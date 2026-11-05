@@ -67,7 +67,7 @@ Keine vorhanden. Die Darstellung erfolgt über Variablen-Presentations.
 
 ### 6. Visualisierung
 
-Keine besondere Funktionalität. Die Statusvariablen können direkt in der Visualisierung verwendet werden.
+Die Instanz bringt eine eigene Statuskachel mit: Online-Zustand mit Dauer, Verbindungsart, übergeordnetes Gerät (ab IP-Symcon 8.2 antippbar), IP und MAC. Die Statusvariablen können weiterhin direkt verwendet werden.
 
 ### 7. PHP-Befehlsreferenz
 

@@ -87,7 +87,7 @@ Keine vorhanden. Die Darstellung erfolgt über Variablen-Presentations.
 
 ### 6. Visualisierung
 
-Keine besondere Funktionalität. Die Statusvariablen können direkt in der Visualisierung verwendet werden.
+Die Instanz bringt eine eigene Statuskachel mit: Belegte Ports mit PoE, verbundene Clients, Funkbänder, CPU/RAM, Uplink, Laufzeit und Firmware-Update. Der Inhalt richtet sich nach dem Gerätetyp (Gateway, Switch, Access Point) und der Kachelgröße. Die Statusvariablen können weiterhin direkt verwendet werden.
 
 ### 7. PHP-Befehlsreferenz
 

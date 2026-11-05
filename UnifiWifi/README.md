@@ -61,8 +61,7 @@ Keine vorhanden. Die Darstellung erfolgt über Variablen-Presentations.
 
 ### 6. Visualisierung
 
-Die Variable 'Aktiv' ist schaltbar und kann in der Visualisierung als Schalter zum
-Ein- und Ausschalten des WLANs verwendet werden.
+Die Instanz bringt eine eigene Statuskachel mit: Zustand, Frequenzen, Sicherheit und WLAN-Optionen. Das WLAN lässt sich in der Kachel schalten, beim Abschalten ist ein zweites Antippen nötig. Das WLAN-Passwort wird nicht an die Kachel übertragen. Die Statusvariablen können weiterhin direkt verwendet werden.
 
 ### 7. PHP-Befehlsreferenz
 

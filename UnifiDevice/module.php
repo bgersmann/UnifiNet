@@ -1,8 +1,13 @@
 <?php
 
 declare(strict_types=1);
+
+require_once __DIR__ . '/../libs/UnifiTile.php';
+
 	class UnifiDevice extends IPSModuleStrict
 	{
+    use UnifiTile;
+
         private const COLOR_YELLOW = 16776960;
         private const COLOR_GREEN = 1692672;
         private const COLOR_RED = 16077123;
@@ -26,6 +31,7 @@ declare(strict_types=1);
 			$this->RegisterPropertyBoolean("PortsAnzeigen", 0);
 			$this->RegisterPropertyBoolean("RadiosAnzeigen", 0);
 			$this->RegisterPropertyBoolean("Utilization", 0);
+			$this->SetVisualizationType(INSTANCE_VISUALIZATION_TYPE_HTML);
 		}
 
 		public function Destroy(): void
@@ -38,6 +44,7 @@ declare(strict_types=1);
 		{
 			//Never delete this line!
 			parent::ApplyChanges();
+			$this->SetVisualizationType(INSTANCE_VISUALIZATION_TYPE_HTML);
 			$vpos = 100;
 			$this->MaintainVariable( 'DeviceName', $this->Translate( 'Device Name' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, 1 );
 			$this->MaintainVariable( 'ID', $this->Translate( 'Device ID' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, $this->ReadPropertyBoolean("IDAnzeigen") );
@@ -107,6 +114,9 @@ declare(strict_types=1);
 
 					case "getConnectedClients":
 						$JSONData=json_decode(unserialize($data),true);
+						if ( isset( $JSONData['connectedClients'] ) ) {
+							$this->TileUpdate( [ 'clients' => $JSONData['connectedClients'] ] );
+						}
 						if ($this->ReadPropertyBoolean("ConnectedClientsAnzeigen")) {
 							if ( is_array( $JSONData ) && isset( $JSONData ) ) {
 								$this->SendDebug("UnifiGW", json_encode($JSONData), 0);
@@ -118,6 +128,7 @@ declare(strict_types=1);
 						$JSONData=json_decode(unserialize($data),true);
 						if ( is_array( $JSONData ) && isset( $JSONData ) ) {
 							$this->SendDebug("UnifiGW", json_encode($JSONData), 0);
+							$this->TileUpdate( $this->TileStats( $JSONData ) );
 							$this->SetValue( 'UptimeSec', (( isset($JSONData[ 'uptimeSec' ]) ) ? $JSONData[ 'uptimeSec' ] : 0) );
 							$this->SetValue( 'UplinkTX', round( (( isset($JSONData[ 'uplink' ][ 'txRateBps' ]) ) ? $JSONData[ 'uplink' ][ 'txRateBps' ]/1000/1000 : 0),3 ) );
 							$this->SetValue( 'UplinkRX', round( (( isset($JSONData[ 'uplink' ][ 'rxRateBps' ]) ) ? $JSONData[ 'uplink' ][ 'rxRateBps' ]/1000/1000 : 0),3 ) );
@@ -132,7 +143,9 @@ declare(strict_types=1);
 						if ( is_array( $JSONData ) && isset( $JSONData ) ) {
 							if ( isset( $JSONData[ 'statusCode' ] ) ) {
 								$this->SetValue( 'Online', false );
+								$this->TileUpdate( [ 'online' => false ] );
 							} else {
+								$this->TileUpdate( $this->TileDevice( $JSONData ) );
 								$this->SetValue( 'DeviceName', $JSONData[ 'name' ] );
 								if ($this->ReadPropertyBoolean("IDAnzeigen")) {
 									$this->SetValue( 'ID', $JSONData[ 'id' ] );
@@ -304,4 +317,87 @@ declare(strict_types=1);
 			$arrayActions[] = array( 'type' => 'RowLayout',  'items' => $arrayOptions );
 			return JSON_encode( array( 'status' => $arrayStatus, 'elements' => $arrayElements, 'actions' => $arrayActions ) );
 	    }
+
+		private function TileKind(): string
+		{
+			return 'device';
+		}
+
+		private function TileRefresh(): void
+		{
+			$this->Send('getDeviceData','');
+		}
+
+		/** Displayed fields of the device data. The API has no explicit type, so the role is derived. */
+		private function TileDevice( array $device ): array
+		{
+			$ports = [];
+			foreach ( $device[ 'interfaces' ][ 'ports' ] ?? [] as $port ) {
+				$ports[] = [
+					'idx' => (int) $port[ 'idx' ],
+					'up' => ( $port[ 'state' ] ?? '' ) === 'UP',
+					'conn' => (string) ( $port[ 'connector' ] ?? 'RJ45' ),
+					'speed' => (int) ( $port[ 'speedMbps' ] ?? 0 ),
+					'poe' => (string) ( $port[ 'poe' ][ 'standard' ] ?? '' ),
+					'poeOn' => ( $port[ 'poe' ][ 'state' ] ?? '' ) === 'UP'
+				];
+			}
+			// The retries come with the statistics and must survive this update.
+			$retries = [];
+			foreach ( $this->TileReadState()[ 'radios' ] ?? [] as $radio ) {
+				$retries[ (string) (float) $radio[ 'ghz' ] ] = $radio[ 'retries' ] ?? null;
+			}
+			$radios = [];
+			foreach ( $device[ 'interfaces' ][ 'radios' ] ?? [] as $radio ) {
+				$ghz = (float) ( $radio[ 'frequencyGHz' ] ?? 0 );
+				$radios[] = [
+					'ghz' => $ghz,
+					'standard' => (string) ( $radio[ 'wlanStandard' ] ?? '' ),
+					'channel' => $radio[ 'channel' ] ?? null,
+					'width' => $radio[ 'channelWidthMHz' ] ?? null,
+					'retries' => $retries[ (string) $ghz ] ?? null
+				];
+			}
+			if ( !isset( $device[ 'uplink' ][ 'deviceId' ] ) ) {
+				$role = 'gateway';
+			} elseif ( isset( $device[ 'features' ][ 'accessPoint' ] ) ) {
+				$role = 'ap';
+			} elseif ( count( $ports ) > 0 ) {
+				$role = 'switch';
+			} else {
+				$role = 'device';
+			}
+			return [
+				'name' => (string) ( $device[ 'name' ] ?? '' ),
+				'model' => (string) ( $device[ 'model' ] ?? '' ),
+				'ip' => (string) ( $device[ 'ipAddress' ] ?? '' ),
+				'online' => ( $device[ 'state' ] ?? '' ) === 'ONLINE',
+				'update' => (bool) ( $device[ 'firmwareUpdatable' ] ?? false ),
+				'role' => $role,
+				'ports' => $ports,
+				'radios' => $radios
+			];
+		}
+
+		/** Displayed fields of the device statistics. */
+		private function TileStats( array $stats ): array
+		{
+			$radios = $this->TileReadState()[ 'radios' ] ?? [];
+			foreach ( $stats[ 'interfaces' ][ 'radios' ] ?? [] as $radioStats ) {
+				foreach ( $radios as &$radio ) {
+					if ( (float) $radio[ 'ghz' ] === (float) ( $radioStats[ 'frequencyGHz' ] ?? -1 ) ) {
+						$radio[ 'retries' ] = $radioStats[ 'txRetriesPct' ] ?? null;
+					}
+				}
+				unset( $radio );
+			}
+			return [
+				'uptime' => $stats[ 'uptimeSec' ] ?? null,
+				'cpu' => $stats[ 'cpuUtilizationPct' ] ?? null,
+				'mem' => $stats[ 'memoryUtilizationPct' ] ?? null,
+				'tx' => isset( $stats[ 'uplink' ][ 'txRateBps' ] ) ? $stats[ 'uplink' ][ 'txRateBps' ] / 1000000 : null,
+				'rx' => isset( $stats[ 'uplink' ][ 'rxRateBps' ] ) ? $stats[ 'uplink' ][ 'rxRateBps' ] / 1000000 : null,
+				'radios' => $radios
+			];
+		}
 	}
