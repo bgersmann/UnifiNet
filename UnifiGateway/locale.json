@@ -4,6 +4,7 @@
             "UniFi Device Gateway": "UniFi Gateway",
             "Please create an API key under \"UniFi Network > Settings > Control Plane > Integrations\".": "Bitte einen API-Key unter \"UniFi Network > Settings > Control Plane > Integrations\" erzeugen.",
             "Unifi Device IP": "Unifi Geräte-IP",
+            "Port (optional, 0 = default 443)": "Port (optional, 0 = Standard 443)",
             "API Key": "API-Key",
             "Site": "Site",
             "Application Version": "Anwendungsversion",

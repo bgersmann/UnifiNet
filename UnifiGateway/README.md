@@ -43,6 +43,7 @@ __Konfigurationsseite__:
 Name     | Beschreibung
 -------- | ------------------
 Unifi Device IP | IP-Adresse oder Hostname der Konsole mit der UniFi Network Application.
+Port (optional) | Nur nötig, wenn die Network Application nicht auf 443 erreichbar ist, z. B. beim UniFi OS Server in Docker (meist 11443). 0 = Standard 443. Der Port wird an alle Anfragen angehängt.
 API Key | API-Key, erzeugt unter 'UniFi Network > Settings > Control Plane > Integrations'.
 Site | Nach dem Übernehmen von IP und API-Key kann die gewünschte Site ausgewählt werden.
 Anwendungsversion anzeigen | Erzeugt eine Variable mit der Version der UniFi Network Application.

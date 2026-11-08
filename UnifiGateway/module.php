@@ -17,6 +17,7 @@ private const CONNECT_TIMEOUT = 5;
         //Never delete this line!
         parent::Create();
         $this->RegisterPropertyString( 'ServerAddress', '192.168.178.1' );
+        $this->RegisterPropertyInteger( 'ServerPort', 0 );
         $this->RegisterPropertyString( 'APIKey', '' );
         $this->RegisterPropertyString( 'Site', 'default' );
         $this->RegisterPropertyBoolean('applicationVersion', 0);
@@ -57,7 +58,7 @@ if (empty($APIKey))
 		} else {
 		    // instance active
 			$this->SetStatus( 102 );
-            $this->SetSummary($this->ReadPropertyString("ServerAddress"));
+            $this->SetSummary($this->getHostLabel());
             // During kernel start the timers take over; no requests before the system is ready.
             if ( IPS_GetKernelRunlevel() === KR_READY ) {
                 $this->UpdateApplicationVersion();
@@ -129,7 +130,7 @@ if (empty($APIKey))
         $wans = $this->getSiteWans( $site );
         $this->TileUpdate( [
             'error' => false,
-            'address' => $this->ReadPropertyString( 'ServerAddress' ),
+            'address' => $this->getHostLabel(),
             'version' => $this->getNetworkVersion(),
             'clients' => (int) ( $clients[ 'totalCount' ] ?? 0 ),
             'devices' => $devices,
@@ -447,6 +448,7 @@ return serialize($array);
         $arrayElements[] = array( 'type' => 'Label','bold' => true, 'label' => $this->Translate('UniFi Device Gateway'));
         $arrayElements[] = array( 'type' => 'Label', 'label' => $this->Translate('Please create an API key under "UniFi Network > Settings > Control Plane > Integrations".'));
         $arrayElements[] = array( 'type' => 'ValidationTextBox', 'name' => 'ServerAddress', 'caption' => 'Unifi Device IP', 'validate' => "^(([a-zA-Z0-9\\.\\-\\_]+(\\.[a-zA-Z]{2,3})+)|(\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b))$" );
+        $arrayElements[] = array( 'type' => 'NumberSpinner', 'name' => 'ServerPort', 'caption' => $this->Translate('Port (optional, 0 = default 443)'), 'minimum' => 0, 'maximum' => 65535 );
         $arrayElements[] = array( 'type' => 'PasswordTextBox', 'name' => 'APIKey', 'caption' => 'API Key' );
         $arrayElements[] = array( 'type' => 'CheckBox', 'name' => 'applicationVersion', 'caption' => $this->Translate('Show Application Version'), 'onChange' => 'IPS_RequestAction($id, "applicationVersionChanged", $applicationVersion);' );
         $arrayElements[] = array( 'type' => 'NumberSpinner', 'name' => 'VersionTimer', 'caption' => $this->Translate('Version update interval (s) -> 0=Off'), 'minimum' => 0, 'enabled' => $this->ReadPropertyBoolean("applicationVersion") );
@@ -475,12 +477,24 @@ return serialize($array);
 
     }
 
+    /** https://host or https://host:port (UniFi OS Server in Docker etc. listens on a different port, e.g. 11443). */
+    private function getBaseUrl(): string {
+        return 'https://'.$this->getHostLabel();
+    }
+
+    /** Host with the optional port; port 0 (or 443) keeps the default HTTPS port. */
+    private function getHostLabel(): string {
+        $host = trim( $this->ReadPropertyString( 'ServerAddress' ) );
+        $port = $this->ReadPropertyInteger( 'ServerPort' );
+        return ( $port > 0 && $port !== 443 ) ? $host.':'.$port : $host;
+    }
+
     public function getApiData( string $endpoint = '' ):array {
         $ServerAddress = $this->ReadPropertyString( 'ServerAddress' );
         $APIKey = $this->ReadPropertyString( 'APIKey' );
 
         $ch = curl_init();
-        curl_setopt( $ch, CURLOPT_URL, 'https://'.$ServerAddress.'/proxy/network/integrations/v1/sites'.$endpoint );
+        curl_setopt( $ch, CURLOPT_URL, $this->getBaseUrl().'/proxy/network/integrations/v1/sites'.$endpoint );
         curl_setopt( $ch, CURLOPT_HTTPGET, true );
         curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
         curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, false );
@@ -521,7 +535,7 @@ return serialize($array);
 			}
 
 			$ch = curl_init();
-            curl_setopt( $ch, CURLOPT_URL, 'https://'.$ServerAddress.'/proxy/network/integrations/v1/sites'.$endpoint );
+            curl_setopt( $ch, CURLOPT_URL, $this->getBaseUrl().'/proxy/network/integrations/v1/sites'.$endpoint );
 			curl_setopt( $ch, CURLOPT_POST, true );
 			curl_setopt( $ch, CURLOPT_POSTFIELDS, $PostData );
 			curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
@@ -562,7 +576,7 @@ return serialize($array);
 
             //https://192.168.178.1/proxy/network/integration/v1/sites/{siteId}/wifi/broadcasts/{wifiBroadcastId}
             $ch = curl_init();
-            curl_setopt( $ch, CURLOPT_URL, 'https://'.$ServerAddress.'/proxy/network/integrations/v1/sites'.$endpoint );
+            curl_setopt( $ch, CURLOPT_URL, $this->getBaseUrl().'/proxy/network/integrations/v1/sites'.$endpoint );
             curl_setopt( $ch, CURLOPT_CUSTOMREQUEST, 'PUT' );
             curl_setopt( $ch, CURLOPT_POSTFIELDS, $PutData );
             curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
@@ -734,7 +748,7 @@ return serialize($array);
         }
 
         $ch = curl_init();
-        curl_setopt( $ch, CURLOPT_URL, 'https://'.$ServerAddress.'/proxy/network/integrations/v1/info');
+        curl_setopt( $ch, CURLOPT_URL, $this->getBaseUrl().'/proxy/network/integrations/v1/info');
         curl_setopt( $ch, CURLOPT_HTTPGET, true );
         curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
         curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, false );

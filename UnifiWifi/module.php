@@ -293,73 +293,23 @@ $this->MaintainVariable( 'WifiName', $this->Translate( 'Name' ), 3, [ 'PRESENTAT
 			return '';
 		}
 		$wifiDetails = @unserialize($data);
-		if (!is_array($wifiDetails)) {
-			$this->SendDebug(__FUNCTION__, 'Unable to unserialize wifi details', 0);
+		if (!is_array($wifiDetails) || !isset($wifiDetails['type']) || isset($wifiDetails['statusCode']) || isset($wifiDetails['code'])) {
+			$this->SendDebug(__FUNCTION__, 'Invalid wifi details, cannot build update payload', 0);
 			return '';
 		}
-		$network = $wifiDetails['network'] ?? null;
-		$security = $wifiDetails['securityConfiguration'] ?? null;
-		if (!is_array($network) || !is_array($security)) {
-			$this->SendDebug(__FUNCTION__, 'Missing required network or security details', 0);
-			return '';
-		}
-		$type = (string) ($wifiDetails['type'] ?? 'STANDARD');
-		$payload = [
-			'type' => $type,
-			'name' => (string) ($wifiDetails['name'] ?? ''),
-			'network' => $network,
-			'enabled' => $enabled,
-			'securityConfiguration' => $security,
-			'multicastToUnicastConversionEnabled' => (bool) ($wifiDetails['multicastToUnicastConversionEnabled'] ?? false),
-			'clientIsolationEnabled' => (bool) ($wifiDetails['clientIsolationEnabled'] ?? false),
-			'hideName' => (bool) ($wifiDetails['hideName'] ?? false),
-			'uapsdEnabled' => (bool) ($wifiDetails['uapsdEnabled'] ?? false),
-			'broadcastingFrequenciesGHz' => $this->normalizeBroadcastingFrequencies($wifiDetails['broadcastingFrequenciesGHz'] ?? [], $type),
-			'arpProxyEnabled' => (bool) ($wifiDetails['arpProxyEnabled'] ?? false),
-			'bssTransitionEnabled' => (bool) ($wifiDetails['bssTransitionEnabled'] ?? false)
-		];
-		$optionalKeys = [
-			'broadcastingDeviceFilter',
-			'mdnsProxyConfiguration',
-			'multicastFilteringPolicy',
-			'basicDataRateKbpsByFrequencyGHz',
-			'clientFilteringPolicy',
-			'blackoutScheduleConfiguration',
-			'hotspotConfiguration',
-			'mloEnabled',
-			'bandSteeringEnabled',
-			'dtimPeriodByFrequencyGHzOverride'
-		];
-		foreach ($optionalKeys as $key) {
-			if (array_key_exists($key, $wifiDetails)) {
-				$payload[$key] = $wifiDetails[$key];
-			}
-		}
+		// Die API verlangt beim PUT das komplette WLAN-Objekt. Alle Felder aus dem GET
+		// unveraendert zurueckschicken (so bleiben auch neue Pflichtfelder wie
+		// advertiseDeviceName und die Zahlen-Typen der Frequenzen erhalten) -
+		// nur die read-only Felder id und metadata entfernen und enabled setzen.
+		$payload = $wifiDetails;
+		unset($payload['id'], $payload['metadata']);
+		$payload['enabled'] = $enabled;
 		$jsonPayload = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 		if ($jsonPayload === false) {
 			$this->SendDebug(__FUNCTION__, 'Failed to encode payload JSON', 0);
 			return '';
 		}
 		return $jsonPayload;
-	}
-
-	private function normalizeBroadcastingFrequencies(mixed $frequencies, string $type): array
-	{
-		if ($type === 'IOT_OPTIMIZED') {
-			return ['2.4'];
-		}
-		if (!is_array($frequencies)) {
-			return [];
-		}
-		$normalized = array_map(static function ($value) {
-			if (is_numeric($value)) {
-				return rtrim(rtrim(number_format((float) $value, 1, '.', ''), '0'), '.');
-			}
-			return (string) $value;
-		}, $frequencies);
-		$unique = array_values(array_unique($normalized));
-		sort($unique);
-		return $unique;
 	}
 
 }
