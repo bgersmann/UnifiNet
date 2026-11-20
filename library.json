@@ -1,12 +1,12 @@
 {
     "id": "{3AE3C867-9298-2112-C827-0A92B5C74E65}",
-    "name": "UnifiNet",
+    "name": "Unifi Network",
     "author": "BGersmann",
     "url": "https://github.com/bgersmann/UnifiNet",
     "compatibility": {
         "version": "8.1"
     },
-    "version": "2.1",
+    "version": "2.2",
     "build": 0,
     "date": 0
 }

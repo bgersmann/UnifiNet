@@ -1,10 +1,10 @@
-# UnifiNet
+# Unifi Network
 
 Bindet die lokale UniFi Network Integration API in IP-Symcon ein: Geräte, Endgeräte,
 Netzwerke und WLANs einer UniFi Site werden als eigene Instanzen mit Statusvariablen
 abgebildet.
 
-Folgende Module beinhaltet das UnifiNet Repository:
+Folgende Module beinhaltet die Bibliothek Unifi Network:
 
 - __UnifiGateway__ ([Dokumentation](UnifiGateway))  
 	Die Schnittstelle zwischen IP-Symcon und der lokalen UniFi Network API. Basis für alle weiteren Module.
@@ -32,7 +32,7 @@ Folgende Module beinhaltet das UnifiNet Repository:
 
 ## Installation
 
-* Über den Module Store das 'UnifiNet'-Modul installieren.
+* Über den Module Store das Modul 'Unifi Network' installieren.
 * Alternativ über das Module Control folgende URL hinzufügen: `https://github.com/bgersmann/UnifiNet`
 
 Anschließend eine UnifiGateway-Instanz anlegen, IP-Adresse und API-Key hinterlegen und

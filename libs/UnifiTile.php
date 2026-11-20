@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Status tile of the UnifiNet instances (HTML-SDK).
+ * Status tile of the Unifi Network instances (HTML-SDK).
  *
  * All instances share libs/tile.html. The module keeps a state in a buffer, returns it with the
  * initial tile and pushes every change to open visualizations. The state goes to the browser,

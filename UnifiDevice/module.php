@@ -241,7 +241,6 @@ require_once __DIR__ . '/../libs/UnifiTile.php';
 						}
 						$this->Send('getDeviceStats','');
 						$this->Send('getConnectedClients','');
-						//IPS_LogMessage('UNIFICL-'.$this->InstanceID,var_dump($array));						
 						break;
 					case "getDeviceName":
 						$data=unserialize($data);

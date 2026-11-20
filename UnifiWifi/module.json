@@ -1,7 +1,7 @@
 {
     "id": "{CA0DC52D-37B8-32A1-C017-8BCB7EF2FAFB}",
     "name": "UnifiWifi",
-    "url": "https://github.com/bgersmann/UnifiNet/",
+    "url": "https://github.com/bgersmann/UnifiNet",
     "type": 3,
     "vendor": "Unifi",
     "aliases": [

@@ -26,7 +26,7 @@ zeigt dessen Konfiguration an und erlaubt das Ein- und Ausschalten des WLANs.
 
 ### 3. Software-Installation
 
-* Über den Module Store das 'UnifiNet'-Modul installieren.
+* Über den Module Store das Modul 'Unifi Network' installieren.
 * Alternativ über das Module Control folgende URL hinzufügen: `https://github.com/bgersmann/UnifiNet`
 
 ### 4. Einrichten der Instanzen in IP-Symcon
