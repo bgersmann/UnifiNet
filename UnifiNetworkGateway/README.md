@@ -1,4 +1,4 @@
-# UnifiGateway
+# UnifiNetworkGateway
 
 Die Schnittstelle zwischen IP-Symcon und der lokalen UniFi Network Integration API.
 Alle übrigen Module dieses Repositories laufen als Geräte-Instanzen unter dieser
@@ -36,7 +36,7 @@ Instanz und beziehen ihre Daten darüber.
 
 ### 4. Einrichten der Instanzen in IP-Symcon
 
- Unter 'Instanz hinzufügen' kann das 'UnifiGateway'-Modul mithilfe des Schnellfilters gefunden werden.  
+ Unter 'Instanz hinzufügen' kann das 'UnifiNetworkGateway'-Modul mithilfe des Schnellfilters gefunden werden.  
 	- Weitere Informationen zum Hinzufügen von Instanzen in der [Dokumentation der Instanzen](https://www.symcon.de/service/dokumentation/konzepte/instanzen/#Instanz_hinzufügen)
 
 __Konfigurationsseite__:

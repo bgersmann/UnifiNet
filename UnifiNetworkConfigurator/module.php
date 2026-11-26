@@ -1,7 +1,7 @@
 <?php
 
 declare(strict_types=1);
-	class UnifiConfigurator extends IPSModuleStrict
+	class UnifiNetworkConfigurator extends IPSModuleStrict
 	{
 		public function GetCompatibleParents(): string
 		{

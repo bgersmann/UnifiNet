@@ -1,4 +1,4 @@
-# UnifiConfigurator
+# UnifiNetworkConfigurator
 
 Listet alle UniFi Geräte und Endgeräte der ausgewählten Site auf und legt daraus
 mit einem Klick die passenden UnifiDevice- bzw. UnifiClient-Instanzen an.
@@ -21,7 +21,7 @@ mit einem Klick die passenden UnifiDevice- bzw. UnifiClient-Instanzen an.
 ### 2. Voraussetzungen
 
 - IP-Symcon ab Version 8.1
-- Eine konfigurierte [UnifiGateway](../UnifiGateway)-Instanz
+- Eine konfigurierte [UnifiNetworkGateway](../UnifiNetworkGateway)-Instanz
 
 ### 3. Software-Installation
 
@@ -30,7 +30,7 @@ mit einem Klick die passenden UnifiDevice- bzw. UnifiClient-Instanzen an.
 
 ### 4. Einrichten der Instanzen in IP-Symcon
 
- Unter 'Instanz hinzufügen' kann das 'UnifiConfigurator'-Modul mithilfe des Schnellfilters gefunden werden.  
+ Unter 'Instanz hinzufügen' kann das 'UnifiNetworkConfigurator'-Modul mithilfe des Schnellfilters gefunden werden.  
 	- Weitere Informationen zum Hinzufügen von Instanzen in der [Dokumentation der Instanzen](https://www.symcon.de/service/dokumentation/konzepte/instanzen/#Instanz_hinzufügen)
 
 __Konfigurationsseite__:

@@ -20,7 +20,14 @@ Die offizielle Integration API kann keine Ports schalten, keinen PoE-Modus setze
 - **Aktivität:** aktueller Download und Upload in Mbit/s.
 - **Blockieren/Freigeben:** eine schaltbare Variable „Blockiert“ und der Befehl `UNIFICL_SetBlocked`. Die Instanz merkt sich die MAC-Adresse, weil ein blockierter Client aus der offiziellen API verschwindet. So lässt er sich auch wieder freigeben.
 
-**Kacheln:** Die neuen Werte erscheinen auch in den Statuskacheln, sofern die Option in der Instanz aktiv ist.
+### Umbenennung zur Abgrenzung vom Protect-Modul
+
+- **Module umbenannt:** `UnifiGateway` heißt jetzt `UnifiNetworkGateway`, `UnifiConfigurator` heißt `UnifiNetworkConfigurator`. Die alten Namen bleiben als Suchbegriff (Alias) erhalten.
+- **Bestehende Instanzen und Skripte laufen weiter:** GUIDs und Befehls-Präfixe (`UNIFIGW_`, `UNIFICG_`) sind unverändert.
+
+### Kacheln
+
+Die neuen Werte erscheinen auch in den Statuskacheln, sofern die Option in der Instanz aktiv ist.
 
 - **Client:** aktueller Download und Upload sowie ein Schalter zum Blockieren. Blockieren braucht ein zweites Antippen, weil es die Verbindung des Anzeigegeräts selbst trennen kann. Ein blockierter Client wird rot als „Blockiert“ angezeigt.
 - **Gerät:** Deaktivierte Ports erscheinen rot schraffiert mit eigenem Legendeneintrag. Die Port-Details zeigen zusätzlich den PoE-Modus. Ports werden in der Kachel bewusst nicht geschaltet, dafür gibt es die Variablen.

@@ -6,10 +6,10 @@ abgebildet.
 
 Folgende Module beinhaltet die Bibliothek Unifi Network:
 
-- __UnifiGateway__ ([Dokumentation](UnifiGateway))  
+- __UnifiNetworkGateway__ ([Dokumentation](UnifiNetworkGateway))  
 	Die Schnittstelle zwischen IP-Symcon und der lokalen UniFi Network API. Basis für alle weiteren Module.
 
-- __UnifiConfigurator__ ([Dokumentation](UnifiConfigurator))  
+- __UnifiNetworkConfigurator__ ([Dokumentation](UnifiNetworkConfigurator))  
 	Der Konfigurator richtet UniFi Geräte und Endgeräte in IP-Symcon ein.
 
 - __UnifiDevice__ ([Dokumentation](UnifiDevice))  
@@ -39,9 +39,9 @@ Siehe [CHANGELOG](CHANGELOG.md).
 * Über den Module Store das Modul 'Unifi Network' installieren.
 * Alternativ über das Module Control folgende URL hinzufügen: `https://github.com/bgersmann/UnifiNet`
 
-Anschließend eine UnifiGateway-Instanz anlegen, IP-Adresse und API-Key hinterlegen und
+Anschließend eine UnifiNetworkGateway-Instanz anlegen, IP-Adresse und API-Key hinterlegen und
 die gewünschte Site auswählen. Die übrigen Instanzen lassen sich danach am schnellsten
-über den UnifiConfigurator anlegen.
+über den UnifiNetworkConfigurator anlegen.
 
 ## Lizenz
 

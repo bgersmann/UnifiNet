@@ -1,9 +1,9 @@
 {
     "id": "{A792D3EC-FEC5-A8E6-F792-E141097C6AB0}",
-    "name": "UnifiGateway",
+    "name": "UnifiNetworkGateway",
     "type": 1,
     "vendor": "Unifi",
-    "aliases": [],
+    "aliases": [ "UnifiGateway", "UniFi Network Gateway" ],
     "parentRequirements": [],
     "childRequirements": [
         "{6E3E09BC-4C83-0ABF-4C97-7E7B8C70A64E}"

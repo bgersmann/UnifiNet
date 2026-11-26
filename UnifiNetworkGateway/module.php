@@ -5,7 +5,7 @@ declare( strict_types = 1 );
 require_once __DIR__ . '/../libs/UnifiTile.php';
 require_once __DIR__ . '/../libs/UnifiPrivateApi.php';
 
-class UnifiGateway extends IPSModuleStrict
+class UnifiNetworkGateway extends IPSModuleStrict
 {
     use UnifiTile;
     use UnifiPrivateApi;
