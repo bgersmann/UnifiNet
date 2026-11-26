@@ -72,7 +72,18 @@
             "Domain": "Domain",
             "Internet": "Internet",
             "Devices online": "Geräte online",
-            "Tile update interval (s) -> 0=Off": "Kachel-Aktualisierung (s) -> 0=Aus"
+            "Tile update interval (s) -> 0=Off": "Kachel-Aktualisierung (s) -> 0=Aus",
+            "Unofficial API": "Inoffizielle API",
+            "These functions use the unofficial UniFi API and require it to be enabled in the gateway (local user + password).": "Diese Funktionen nutzen die inoffizielle UniFi API und setzen voraus, dass sie im Gateway aktiviert ist (lokaler Benutzer + Passwort).",
+            "Read activity (current download/upload)": "Aktivität auslesen (aktueller Download/Upload)",
+            "Switchable variable to block/unblock the client": "Schaltbare Variable zum Blockieren/Freigeben des Clients",
+            "Activity Download": "Aktivität Download",
+            "Activity Upload": "Aktivität Upload",
+            "Blocked": "Blockiert",
+            "The client could not be changed. Details are in the debug output of the gateway.": "Der Client konnte nicht geändert werden. Details stehen in der Debug-Ausgabe des Gateways.",
+            "Download": "Download",
+            "Upload": "Upload",
+            "Tap again to block": "Zum Blockieren erneut tippen"
         }
     }
 }

@@ -3,10 +3,12 @@
 declare( strict_types = 1 );
 
 require_once __DIR__ . '/../libs/UnifiTile.php';
+require_once __DIR__ . '/../libs/UnifiPrivateApi.php';
 
 class UnifiGateway extends IPSModuleStrict
 {
     use UnifiTile;
+    use UnifiPrivateApi;
 
 private const CONNECT_TIMEOUT = 5;
     private const REQUEST_TIMEOUT = 15;
@@ -27,6 +29,12 @@ private const CONNECT_TIMEOUT = 5;
         $this->RegisterPropertyBoolean('hierarchyClients', 0);
         $this->RegisterTimer( 'Update Version', 0, "UNIFIGW_UpdateApplicationVersion(\$_IPS['TARGET']);" );
         $this->RegisterTimer( 'Update Hierarchy', 0, "UNIFIGW_UpdateNetworkHierarchy(\$_IPS['TARGET']);" );
+        $this->RegisterPropertyBoolean( 'privApiActive', false );
+        $this->RegisterPropertyString( 'localUser', '' );
+        $this->RegisterPropertyString( 'localPassword', '' );
+        $this->RegisterAttributeString( 'localToken', '' );
+        // Network/VLAN settings of ports disabled by this module, per device MAC and port
+        $this->RegisterAttributeString( 'PortBackup', '{}' );
         $this->RegisterPropertyInteger( 'TileTimer', 60 );
         $this->RegisterTimer( 'Update Tile', 0, "UNIFIGW_UpdateTile(\$_IPS['TARGET']);" );
         $this->SetVisualizationType(defined('INSTANCE_VISUALIZATION_TYPE_HTML') ? constant('INSTANCE_VISUALIZATION_TYPE_HTML') : 1);
@@ -44,6 +52,8 @@ private const CONNECT_TIMEOUT = 5;
         parent::ApplyChanges();
         $this->SetVisualizationType(defined('INSTANCE_VISUALIZATION_TYPE_HTML') ? constant('INSTANCE_VISUALIZATION_TYPE_HTML') : 1);
         $vpos = 100;
+        // New credentials or address: log in again with the next request.
+        $this->WriteAttributeString( 'localToken', '' );
 $APIKey = $this->ReadPropertyString( 'APIKey' );
         $this->MaintainVariable( 'applicationVersion', $this->Translate( 'Application Version' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, $this->ReadPropertyBoolean("applicationVersion") );
         $this->MaintainVariable( 'networkHierarchy', $this->Translate( 'Network Hierarchy' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'sitemap'], $vpos++, $this->ReadPropertyBoolean("networkHierarchy") );
@@ -314,7 +324,10 @@ if (empty($APIKey))
 		}
 
 		if (isset($data->Api)) {
-			switch ($data->Api) {               
+            if ( str_starts_with( (string) $data->Api, 'priv' ) ) {
+                return $this->privForward( (string) $data->Api, (string) ( $data->Param1 ?? '' ) ) ?? '';
+            }
+			switch ($data->Api) {
                 case "getSiteWans":
                     if (isset($data->Param1)) {
                         $array = $this->getSiteWans(IPS_GetProperty( $data->InstanceID, 'SiteID' ));
@@ -450,6 +463,13 @@ return serialize($array);
         $arrayElements[] = array( 'type' => 'ValidationTextBox', 'name' => 'ServerAddress', 'caption' => 'Unifi Device IP', 'validate' => "^(([a-zA-Z0-9\\.\\-\\_]+(\\.[a-zA-Z]{2,3})+)|(\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b))$" );
         $arrayElements[] = array( 'type' => 'NumberSpinner', 'name' => 'ServerPort', 'caption' => $this->Translate('Port (optional, 0 = default 443)'), 'minimum' => 0, 'maximum' => 65535 );
         $arrayElements[] = array( 'type' => 'PasswordTextBox', 'name' => 'APIKey', 'caption' => 'API Key' );
+        $arrayElements[] = array( 'type' => 'ExpansionPanel', 'caption' => $this->Translate( 'Unofficial API (optional)' ), 'expanded' => $this->ReadPropertyBoolean( 'privApiActive' ), 'items' => [
+            [ 'type' => 'Label', 'label' => $this->Translate( 'Required for switching ports, PoE, client activity and blocking clients. Uses a local UniFi user without MFA; changes need the role Site Admin or higher.' ) ],
+            [ 'type' => 'CheckBox', 'name' => 'privApiActive', 'caption' => $this->Translate( 'Enable unofficial API' ) ],
+            [ 'type' => 'ValidationTextBox', 'name' => 'localUser', 'caption' => $this->Translate( 'Local UniFi user' ) ],
+            [ 'type' => 'PasswordTextBox', 'name' => 'localPassword', 'caption' => $this->Translate( 'Password of local user' ) ],
+            [ 'type' => 'Button', 'caption' => $this->Translate( 'Test login' ), 'onClick' => 'echo UNIFIGW_TestUnofficialAPI($id);' ]
+        ] );
         $arrayElements[] = array( 'type' => 'CheckBox', 'name' => 'applicationVersion', 'caption' => $this->Translate('Show Application Version'), 'onChange' => 'IPS_RequestAction($id, "applicationVersionChanged", $applicationVersion);' );
         $arrayElements[] = array( 'type' => 'NumberSpinner', 'name' => 'VersionTimer', 'caption' => $this->Translate('Version update interval (s) -> 0=Off'), 'minimum' => 0, 'enabled' => $this->ReadPropertyBoolean("applicationVersion") );
         $arrayElements[] = array( 'type' => 'CheckBox', 'name' => 'networkHierarchy', 'caption' => $this->Translate('Create network hierarchy as JSON (for EChartsTree)'), 'onChange' => 'IPS_RequestAction($id, "networkHierarchyChanged", $networkHierarchy);' );

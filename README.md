@@ -30,6 +30,10 @@ Folgende Module beinhaltet die Bibliothek Unifi Network:
 - Eine UniFi Konsole mit aktivierter Network Integration API
 - Ein API-Key, erzeugt unter 'UniFi Network > Settings > Control Plane > Integrations'
 
+## Änderungen
+
+Siehe [CHANGELOG](CHANGELOG.md).
+
 ## Installation
 
 * Über den Module Store das Modul 'Unifi Network' installieren.

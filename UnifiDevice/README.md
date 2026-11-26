@@ -22,6 +22,7 @@ Radio-Zustand — als Statusvariablen aktuell.
 * Optional: eine Variable je Netzwerk-Port inklusive PoE-Zustand
 * Optional: eine Variable je WLAN-Radio
 * Optional: Anzahl der verbundenen Endgeräte
+* Optional (inoffizielle API): je Port eine schaltbare Variable zum Aktivieren/Deaktivieren und je PoE-Port ein einstellbarer PoE-Modus
 * Löst per PHP-Befehl einen PoE-Power-Cycle oder einen Geräte-Neustart aus
 
 ### 2. Voraussetzungen
@@ -51,6 +52,10 @@ MAC-Adresse anzeigen | Erzeugt eine Variable mit der MAC-Adresse des Geräts.
 ID anzeigen | Erzeugt eine Variable mit der UUID des Geräts.
 Verbundene Endgeräte anzeigen | Erzeugt eine Variable mit der Anzahl verbundener Endgeräte.
 Auslastung auslesen (CPU + Arbeitsspeicher) | Erzeugt Variablen für CPU- und Arbeitsspeicher-Auslastung.
+Inoffizielle API > Schaltbare Variable je Port | Erzeugt je Port eine schaltbare Variable 'Port *n* aktiv'. Der Uplink-Port erhält keine, damit sich das Gerät nicht selbst vom Netz trennt.
+Inoffizielle API > Einstellbarer PoE-Modus je PoE-Port | Erzeugt je PoE-fähigem Port eine Auswahl Auto / Aus und, sofern der Port es unterstützt, 24V passiv / Durchleitung.
+
+Die Optionen der inoffiziellen API setzen voraus, dass sie im Gateway aktiviert ist. Die Variablen entstehen mit der nächsten Datenabfrage und werden beim Abwählen der Option entfernt. Ein Port mit hinterlegtem MAC-Filter (Port Security) wird nicht geändert. Beim Deaktivieren setzt die Konsole Netzwerk und VLANs des Ports zurück. Das Modul sichert diese Einstellungen deshalb vorher im Gateway und stellt sie beim Aktivieren wieder her. Wurde der Port außerhalb des Moduls deaktiviert, gibt es keine Sicherung, und der Port kommt mit den Standardeinstellungen der Konsole zurück.
 
 ### 5. Statusvariablen und Profile
 
@@ -77,6 +82,8 @@ Arbeitsspeicher Auslastung | Float | Speicherauslastung in % (nur bei aktivierte
 Verbundene Endgeräte | Integer | Anzahl verbundener Endgeräte (nur bei aktivierter Option)
 Port *n* | String | Verbindungsgeschwindigkeit bzw. Zustand des Ports (nur bei aktivierter Option)
 Port *n*-POE | String | PoE-Standard bzw. PoE-Zustand des Ports (nur bei aktivierter Option)
+Port *n* aktiv | Boolean | Port aktiviert/deaktiviert, schaltbar (inoffizielle API, nur bei aktivierter Option)
+Port *n* PoE | String | PoE-Modus `auto`, `off`, `pasv24` oder `passthrough`, einstellbar (inoffizielle API, nur bei aktivierter Option)
 WLAN *x* GHz | String | WLAN-Standard und Kanalbreite des Radios (nur bei aktivierter Option)
 
 Die Anzahl der Port- und WLAN-Variablen hängt vom jeweiligen Gerät ab.
@@ -87,7 +94,7 @@ Keine vorhanden. Die Darstellung erfolgt über Variablen-Presentations.
 
 ### 6. Visualisierung
 
-Die Instanz bringt eine eigene Statuskachel mit: Belegte Ports mit PoE, verbundene Clients, Funkbänder, CPU/RAM, Uplink, Laufzeit und Firmware-Update. Der Inhalt richtet sich nach dem Gerätetyp (Gateway, Switch, Access Point) und der Kachelgröße. Die Statusvariablen können weiterhin direkt verwendet werden.
+Die Instanz bringt eine eigene Statuskachel mit: Belegte Ports mit PoE, verbundene Clients, Funkbänder, CPU/RAM, Uplink, Laufzeit und Firmware-Update. Der Inhalt richtet sich nach dem Gerätetyp (Gateway, Switch, Access Point) und der Kachelgröße. Mit den Optionen der inoffiziellen API erscheinen deaktivierte Ports rot schraffiert, und die Port-Details zeigen den PoE-Modus. Geschaltet wird über die Variablen, nicht in der Kachel. Die Statusvariablen können weiterhin direkt verwendet werden.
 
 ### 7. PHP-Befehlsreferenz
 
@@ -99,6 +106,26 @@ Führt auf dem angegebenen PoE-Port einen Power-Cycle aus.
 Beispiel:
 ```php
 UNIFIDV_PowerCycle(12345, 4);
+```
+
+```php
+boolean UNIFIDV_SetPortEnabled(integer $InstanzID, integer $Port, boolean $Aktiv);
+```
+Aktiviert oder deaktiviert einen Port (inoffizielle API). Der Uplink-Port wird nicht deaktiviert.
+
+Beispiel:
+```php
+UNIFIDV_SetPortEnabled(12345, 4, false);
+```
+
+```php
+boolean UNIFIDV_SetPoeMode(integer $InstanzID, integer $Port, string $Modus);
+```
+Setzt den PoE-Modus eines Ports: `auto`, `off`, `pasv24` oder `passthrough` (inoffizielle API).
+
+Beispiel:
+```php
+UNIFIDV_SetPoeMode(12345, 4, 'off');
 ```
 
 ```php

@@ -20,6 +20,7 @@ Instanz und beziehen ihre Daten darüber.
 * Wählt die zu verwendende Site aus
 * Verteilt die Daten an die untergeordneten UnifiDevice-, UnifiClient-, UnifiNetwork- und UnifiWifi-Instanzen
 * Optional: zeigt die Version der UniFi Network Application an und aktualisiert sie per Timer
+* Optional: inoffizielle API mit lokalem Benutzer für schaltbare Ports, PoE-Modus, Client-Aktivität und das Blockieren von Clients
 * Optional: legt die Hierarchie der UniFi Geräte, auf Wunsch mit Endgeräten, als JSON in einer Stringvariable ab, zum Beispiel für die Darstellung mit EChartsTree
 
 ### 2. Voraussetzungen
@@ -46,6 +47,8 @@ Unifi Device IP | IP-Adresse oder Hostname der Konsole mit der UniFi Network App
 Port (optional) | Nur nötig, wenn die Network Application nicht auf 443 erreichbar ist, z. B. beim UniFi OS Server in Docker (meist 11443). 0 = Standard 443. Der Port wird an alle Anfragen angehängt.
 API Key | API-Key, erzeugt unter 'UniFi Network > Settings > Control Plane > Integrations'.
 Site | Nach dem Übernehmen von IP und API-Key kann die gewünschte Site ausgewählt werden.
+Inoffizielle API (optional) > Inoffizielle API aktivieren | Schaltet die Funktionen der inoffiziellen API für alle Kind-Instanzen frei.
+Inoffizielle API (optional) > Lokaler UniFi-Benutzer / Passwort | Lokaler Benutzer der Konsole (kein UI-Konto, ohne MFA). Für Änderungen an Ports und Clients ist mindestens die Rolle Site Admin nötig. 'Anmeldung testen' prüft die Zugangsdaten.
 Anwendungsversion anzeigen | Erzeugt eine Variable mit der Version der UniFi Network Application.
 Aktualisierungsintervall Version | Intervall in Sekunden, in dem die Version abgefragt wird (Standard: 3600, 0 = aus). Nur aktiv, wenn die Anwendungsversion angezeigt wird.
 Netzwerkhierarchie als JSON anlegen | Erzeugt eine Stringvariable mit der Hierarchie der UniFi Geräte.
@@ -53,6 +56,10 @@ Aktualisierungsintervall Hierarchie | Intervall in Sekunden, in dem die Hierarch
 Endgeräte in die Hierarchie aufnehmen | Ergänzt die aktuell verbundenen Endgeräte unter ihrem Uplink-Gerät (Standard: aus).
 
 Beim Übernehmen der Konfiguration werden die aktivierten Werte sofort aktualisiert. Im Aktionsbereich lassen sie sich zusätzlich über die Schaltflächen 'Version aktualisieren' und 'Hierarchie aktualisieren' abrufen.
+
+__Inoffizielle API__:
+
+Die offizielle Integration API kann keine Ports schalten, keinen PoE-Modus setzen und keine Clients blockieren. Diese Funktionen nutzen deshalb die klassische API der Network Application (`/proxy/network/api/s/<Site>/...`) mit Benutzer und Passwort. Sie ist von Ubiquiti nicht dokumentiert und kann sich mit Updates ändern. Welche Funktionen genutzt werden, wird in den Geräte- und Client-Instanzen im Bereich 'Inoffizielle API' gewählt. Passwort, Cookie und CSRF-Token erscheinen nicht in der Debug-Ausgabe.
 
 __Netzwerkhierarchie in EChartsTree darstellen__:
 
@@ -91,6 +98,9 @@ Aktualisiert die Variable 'Anwendungsversion', sofern die Option aktiviert ist.
 
 `UNIFIGW_UpdateNetworkHierarchy(integer $InstanzID);`  
 Aktualisiert die Variable 'Netzwerkhierarchie', sofern die Option aktiviert ist.
+
+`string UNIFIGW_TestUnofficialAPI(integer $InstanzID);`  
+Meldet sich mit dem lokalen Benutzer neu an und liefert das Ergebnis als Text.
 
 Darüber hinaus sind die API-Methoden des Gateways als `UNIFIGW_`-Befehle erreichbar
 (z. B. `UNIFIGW_getSites`, `UNIFIGW_getDevices`, `UNIFIGW_getNetworkVersion`). Sie sind für

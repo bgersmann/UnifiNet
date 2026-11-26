@@ -77,7 +77,17 @@
             "Domain": "Domain",
             "Internet": "Internet",
             "Devices online": "Geräte online",
-            "Tile update interval (s) -> 0=Off": "Kachel-Aktualisierung (s) -> 0=Aus"
+            "Tile update interval (s) -> 0=Off": "Kachel-Aktualisierung (s) -> 0=Aus",
+            "Unofficial API (optional)": "Inoffizielle API (optional)",
+            "Required for switching ports, PoE, client activity and blocking clients. Uses a local UniFi user without MFA; changes need the role Site Admin or higher.": "Benötigt für schaltbare Ports, PoE, Client-Aktivität und das Blockieren von Clients. Verwendet einen lokalen UniFi-Benutzer ohne MFA; Änderungen erfordern mindestens die Rolle Site Admin.",
+            "Enable unofficial API": "Inoffizielle API aktivieren",
+            "Local UniFi user": "Lokaler UniFi-Benutzer",
+            "Password of local user": "Passwort des lokalen Benutzers",
+            "Test login": "Anmeldung testen",
+            "The unofficial API is not enabled or user/password are missing.": "Die inoffizielle API ist nicht aktiviert oder Benutzer/Passwort fehlen.",
+            "Login failed. Please check user and password (local UniFi user without MFA).": "Anmeldung fehlgeschlagen. Bitte Benutzer und Passwort prüfen (lokaler UniFi-Benutzer ohne MFA).",
+            "Login successful, but the data request failed. Please check the site.": "Anmeldung erfolgreich, aber die Datenabfrage ist fehlgeschlagen. Bitte die Site prüfen.",
+            "Unofficial API works: %d devices found.": "Inoffizielle API funktioniert: %d Geräte gefunden."
         }
     }
 }

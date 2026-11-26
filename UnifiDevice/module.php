@@ -31,6 +31,10 @@ require_once __DIR__ . '/../libs/UnifiTile.php';
 			$this->RegisterPropertyBoolean("PortsAnzeigen", 0);
 			$this->RegisterPropertyBoolean("RadiosAnzeigen", 0);
 			$this->RegisterPropertyBoolean("Utilization", 0);
+			// Unofficial API (gateway with local user): switchable ports and PoE
+			$this->RegisterPropertyBoolean( 'privPortSwitch', false );
+			$this->RegisterPropertyBoolean( 'privPoeControl', false );
+			$this->RegisterAttributeString( 'MAC', '' );
 			$this->SetVisualizationType(defined('INSTANCE_VISUALIZATION_TYPE_HTML') ? constant('INSTANCE_VISUALIZATION_TYPE_HTML') : 1);
 		}
 
@@ -76,7 +80,14 @@ require_once __DIR__ . '/../libs/UnifiTile.php';
 			$this->MaintainVariable( 'Memory', $this->Translate( 'Memory Utilization' ), 2, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'DIGITS'=> 2 , 'SUFFIX'=> ' %' , 'ICON'=> 'laptop-binary'], $vpos++, $this->ReadPropertyBoolean("Utilization") );
 			$this->MaintainVariable( 'MAC', $this->Translate( 'Device MAC' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, $this->ReadPropertyBoolean("MACAnzeigen") );
 			$this->MaintainVariable( 'ConnectedClients', $this->Translate( 'Connected Clients' ), 1, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, $this->ReadPropertyBoolean("ConnectedClientsAnzeigen") );
-		
+			// The port variables are created with the data; switched-off options remove them here.
+			if ( !$this->ReadPropertyBoolean( 'privPortSwitch' ) ) {
+				$this->RemovePrivateVariables( 'PortEnabled_' );
+			}
+			if ( !$this->ReadPropertyBoolean( 'privPoeControl' ) ) {
+				$this->RemovePrivateVariables( 'PortPoE_' );
+			}
+
 
 
 			$TimerMS = $this->ReadPropertyInteger( 'Timer' ) * 1000;
@@ -156,6 +167,9 @@ require_once __DIR__ . '/../libs/UnifiTile.php';
 								$this->SetValue( 'Firmware', $JSONData[ 'firmwareVersion' ] );
 								$this->SetValue( 'FirmwareUpdate', $JSONData[ 'firmwareUpdatable' ] );
 								$this->SetValue( 'Online', ( $JSONData[ 'state' ] == 'ONLINE' ) ? true : false );
+								if ( isset( $JSONData[ 'macAddress' ] ) ) {
+									$this->WriteAttributeString( 'MAC', (string) $JSONData[ 'macAddress' ] );
+								}
 								if ($this->ReadPropertyBoolean("MACAnzeigen")) {
 									if ( isset( $JSONData['macAddress'] ) ) {
 										$this->SetValue( 'MAC', $JSONData[ 'macAddress' ] );
@@ -241,6 +255,7 @@ require_once __DIR__ . '/../libs/UnifiTile.php';
 						}
 						$this->Send('getDeviceStats','');
 						$this->Send('getConnectedClients','');
+						$this->UpdatePrivatePorts();
 						break;
 					case "getDeviceName":
 						$data=unserialize($data);
@@ -257,6 +272,131 @@ require_once __DIR__ . '/../libs/UnifiTile.php';
 						break;
 
 				}			
+			}
+		}
+
+		public function RequestAction( string $Ident, mixed $Value ): void
+		{
+			if ( preg_match( '/^PortEnabled_(\d+)$/', $Ident, $m ) ) {
+				if ( !$this->SetPortEnabled( (int) $m[ 1 ], (bool) $Value ) ) {
+					echo $this->Translate( 'The port could not be changed. Details are in the debug output of the gateway.' );
+				}
+				return;
+			}
+			if ( preg_match( '/^PortPoE_(\d+)$/', $Ident, $m ) ) {
+				if ( !$this->SetPoeMode( (int) $m[ 1 ], (string) $Value ) ) {
+					echo $this->Translate( 'The PoE mode could not be changed. Details are in the debug output of the gateway.' );
+				}
+				return;
+			}
+			throw new Exception( 'Invalid Ident' );
+		}
+
+		/** Enables or disables a switch port (unofficial API). The uplink port is never disabled. */
+		public function SetPortEnabled( int $port, bool $enabled ): bool
+		{
+			$ok = (bool) $this->PrivateCall( 'privSetPortEnabled', [ 'port' => $port, 'enabled' => $enabled ] );
+			if ( $ok ) {
+				if ( @$this->GetIDForIdent( 'PortEnabled_'.$port ) ) {
+					$this->SetValue( 'PortEnabled_'.$port, $enabled );
+				}
+				$priv = $this->TileReadState()[ 'portsPriv' ] ?? [];
+				if ( isset( $priv[ $port ] ) ) {
+					$priv[ $port ][ 'enabled' ] = $enabled;
+					$this->TileUpdate( [ 'portsPriv' => (object) $priv ] );
+				}
+			}
+			return $ok;
+		}
+
+		/** Sets the PoE mode of a port: auto, off, pasv24 or passthrough (unofficial API). */
+		public function SetPoeMode( int $port, string $mode ): bool
+		{
+			$ok = (bool) $this->PrivateCall( 'privSetPoeMode', [ 'port' => $port, 'mode' => $mode ] );
+			if ( $ok ) {
+				if ( @$this->GetIDForIdent( 'PortPoE_'.$port ) ) {
+					$this->SetValue( 'PortPoE_'.$port, $mode );
+				}
+				$priv = $this->TileReadState()[ 'portsPriv' ] ?? [];
+				if ( isset( $priv[ $port ] ) ) {
+					$priv[ $port ][ 'poeMode' ] = $mode;
+					$this->TileUpdate( [ 'portsPriv' => (object) $priv ] );
+				}
+			}
+			return $ok;
+		}
+
+		/** Request to the unofficial API of the gateway; the MAC of this device is added. */
+		private function PrivateCall( string $api, array $param ): mixed
+		{
+			$mac = $this->ReadAttributeString( 'MAC' );
+			if ( $mac === '' || !$this->HasActiveParent() ) {
+				return null;
+			}
+			$param[ 'mac' ] = $mac;
+			$data = $this->SendDataToParent( json_encode( [ 'DataID' => '{4A5538F1-1C38-198A-3144-D806E0DADF87}', 'Api' => $api, 'InstanceID' => $this->InstanceID, 'Param1' => json_encode( $param ) ] ) );
+			return $data === '' ? null : unserialize( $data );
+		}
+
+		/** Switchable admin state and PoE mode per port, read with the unofficial API. */
+		private function UpdatePrivatePorts(): void
+		{
+			$portSwitch = $this->ReadPropertyBoolean( 'privPortSwitch' );
+			$poeControl = $this->ReadPropertyBoolean( 'privPoeControl' );
+			if ( !$portSwitch && !$poeControl ) {
+				if ( isset( $this->TileReadState()[ 'portsPriv' ] ) ) {
+					$this->TileUpdate( [ 'portsPriv' => null ] );
+				}
+				return;
+			}
+			$result = json_decode( (string) $this->PrivateCall( 'privGetDevicePorts', [] ), true );
+			if ( !is_array( $result ) || !( $result[ 'ok' ] ?? false ) ) {
+				$this->SendDebug( 'UnifiDV', 'Unofficial API: no port data (enabled in the gateway?)', 0 );
+				return;
+			}
+			$tile = [];
+			foreach ( $result[ 'ports' ] as $port ) {
+				$idx = (int) $port[ 'idx' ];
+				// The tile shows the admin state and the PoE mode in the port details.
+				if ( $portSwitch ) {
+					$tile[ $idx ][ 'enabled' ] = (bool) $port[ 'enabled' ];
+				}
+				if ( $poeControl && $port[ 'poe' ] ) {
+					$tile[ $idx ][ 'poeMode' ] = (string) $port[ 'poeMode' ];
+				}
+				$label = $this->Translate( 'Port' ).' '.$idx;
+				// The uplink port gets no switch: disabling it would cut the device off.
+				if ( $portSwitch && !$port[ 'uplink' ] ) {
+					$this->MaintainVariable( 'PortEnabled_'.$idx, $label.' '.$this->Translate( 'enabled' ), 0, [ 'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH, 'ICON_TRUE' => 'ethernet', 'USAGE_TYPE' => 0 ], 1500 + $idx * 2, true );
+					$this->EnableAction( 'PortEnabled_'.$idx );
+					$this->SetValue( 'PortEnabled_'.$idx, (bool) $port[ 'enabled' ] );
+				}
+				if ( $poeControl && $port[ 'poe' ] ) {
+					$options = [
+						[ 'Value' => 'auto', 'Caption' => $this->Translate( 'Auto' ), 'IconActive' => false, 'IconValue' => '', 'Color' => -1 ],
+						[ 'Value' => 'off', 'Caption' => $this->Translate( 'Off' ), 'IconActive' => false, 'IconValue' => '', 'Color' => -1 ]
+					];
+					if ( $port[ 'poePasv24' ] || $port[ 'poeMode' ] === 'pasv24' ) {
+						$options[] = [ 'Value' => 'pasv24', 'Caption' => $this->Translate( '24V passive' ), 'IconActive' => false, 'IconValue' => '', 'Color' => -1 ];
+					}
+					if ( $port[ 'poePassthrough' ] || $port[ 'poeMode' ] === 'passthrough' ) {
+						$options[] = [ 'Value' => 'passthrough', 'Caption' => $this->Translate( 'Passthrough' ), 'IconActive' => false, 'IconValue' => '', 'Color' => -1 ];
+					}
+					$this->MaintainVariable( 'PortPoE_'.$idx, $label.' PoE', 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_ENUMERATION, 'ICON' => 'plug', 'OPTIONS' => json_encode( $options ) ], 1500 + $idx * 2 + 1, true );
+					$this->EnableAction( 'PortPoE_'.$idx );
+					$this->SetValue( 'PortPoE_'.$idx, $port[ 'poeMode' ] );
+				}
+			}
+			$this->TileUpdate( [ 'portsPriv' => (object) $tile ] );
+		}
+
+		private function RemovePrivateVariables( string $prefix ): void
+		{
+			foreach ( IPS_GetChildrenIDs( $this->InstanceID ) as $childID ) {
+				$ident = IPS_GetObject( $childID )[ 'ObjectIdent' ];
+				if ( str_starts_with( $ident, $prefix ) ) {
+					$this->UnregisterVariable( $ident );
+				}
 			}
 		}
 
@@ -303,6 +443,11 @@ require_once __DIR__ . '/../libs/UnifiTile.php';
 			$arrayOptions[] = array( 'type' => 'CheckBox', 'name' => 'ConnectedClientsAnzeigen', 'width' => '220px','caption' => $this->Translate('Show Connected Clients') );
 			$arrayElements[] = array( 'type' => 'RowLayout',  'items' => $arrayOptions );
 			$arrayElements[] = array( 'type' => 'CheckBox', 'name' => 'Utilization', 'caption' => $this->Translate('Read utilization statistics (CPU + memory)') );
+			$arrayElements[] = array( 'type' => 'ExpansionPanel', 'caption' => $this->Translate( 'Unofficial API' ), 'expanded' => $this->ReadPropertyBoolean( 'privPortSwitch' ) || $this->ReadPropertyBoolean( 'privPoeControl' ), 'items' => [
+				[ 'type' => 'Label', 'label' => $this->Translate( 'These functions use the unofficial UniFi API and require it to be enabled in the gateway (local user + password).' ) ],
+				[ 'type' => 'CheckBox', 'name' => 'privPortSwitch', 'caption' => $this->Translate( 'Switchable variable per port (enable/disable port)' ) ],
+				[ 'type' => 'CheckBox', 'name' => 'privPoeControl', 'caption' => $this->Translate( 'Selectable PoE mode per PoE port' ) ]
+			] );
 
 			$arrayActions = array();
 			unset($arrayOptions);

@@ -25,6 +25,11 @@ class UnifiClient extends IPSModuleStrict
         $this->RegisterPropertyInteger('Timer', 0);
 		$this->RegisterPropertyBoolean("MACAnzeigen", 0);
 		$this->RegisterPropertyBoolean("IDAnzeigen", 0);
+        // Unofficial API (gateway with local user): activity and blocking
+        $this->RegisterPropertyBoolean( 'privActivity', false );
+        $this->RegisterPropertyBoolean( 'privBlock', false );
+        // Blocked clients disappear from the official API, so the MAC is kept.
+        $this->RegisterAttributeString( 'MAC', '' );
         $this->RegisterTimer('Collect Data', 0, "UNIFICL_Send(\$_IPS['TARGET'],'getClientData','');");
         $this->SetVisualizationType(defined('INSTANCE_VISUALIZATION_TYPE_HTML') ? constant('INSTANCE_VISUALIZATION_TYPE_HTML') : 1);
     }
@@ -59,6 +64,13 @@ class UnifiClient extends IPSModuleStrict
 			] )], $vpos++, 1 );
 			$this->MaintainVariable( 'UplinkDevice', $this->Translate( 'Uplink Device' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, 1 );
 			$this->MaintainVariable( 'MAC', $this->Translate( 'Client MAC' ), 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'USAGE_TYPE'=> 0 ,'ICON'=> 'circle-info'], $vpos++, $this->ReadPropertyBoolean("MACAnzeigen") );
+			$activity = $this->ReadPropertyBoolean( 'privActivity' );
+			$this->MaintainVariable( 'ActivityDown', $this->Translate( 'Activity Download' ), 2, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'DIGITS' => 3, 'SUFFIX' => ' Mbit/s', 'ICON' => 'download' ], $vpos++, $activity );
+			$this->MaintainVariable( 'ActivityUp', $this->Translate( 'Activity Upload' ), 2, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'DIGITS' => 3, 'SUFFIX' => ' Mbit/s', 'ICON' => 'upload' ], $vpos++, $activity );
+			$this->MaintainVariable( 'Blocked', $this->Translate( 'Blocked' ), 0, [ 'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH, 'ICON_TRUE' => 'ban', 'USAGE_TYPE' => 2 ], $vpos++, $this->ReadPropertyBoolean( 'privBlock' ) );
+			if ( $this->ReadPropertyBoolean( 'privBlock' ) ) {
+				$this->EnableAction( 'Blocked' );
+			}
 			$TimerMS = $this->ReadPropertyInteger( 'Timer' ) * 1000;
 			$this->SetTimerInterval( 'Collect Data', $TimerMS );
 			if ( 0 == $TimerMS )
@@ -143,8 +155,13 @@ class UnifiClient extends IPSModuleStrict
 								if ($this->ReadPropertyBoolean("MACAnzeigen")) {
 									$this->SetValue( 'MAC', $array[ 'macAddress' ] );
 								}
+								if ( isset( $array[ 'macAddress' ] ) ) {
+									$this->WriteAttributeString( 'MAC', (string) $array[ 'macAddress' ] );
+								}
 							}
 						}
+						// Also for offline clients: a blocked client is offline.
+						$this->UpdatePrivateClient();
 						break;
 					case "getDeviceName":
 						$data=unserialize($data);
@@ -155,6 +172,76 @@ class UnifiClient extends IPSModuleStrict
 
 				}
 			}			
+		}
+
+		public function RequestAction( string $Ident, mixed $Value ): void
+		{
+			switch ( $Ident ) {
+				case 'Blocked':
+					if ( !$this->SetBlocked( (bool) $Value ) ) {
+						echo $this->Translate( 'The client could not be changed. Details are in the debug output of the gateway.' );
+					}
+					break;
+				default:
+					throw new Exception( 'Invalid Ident' );
+			}
+		}
+
+		/** Blocks or unblocks the client in the network (unofficial API). */
+		public function SetBlocked( bool $blocked ): bool
+		{
+			$ok = (bool) $this->PrivateCall( 'privSetClientBlocked', [ 'blocked' => $blocked ] );
+			if ( $ok && $this->ReadPropertyBoolean( 'privBlock' ) ) {
+				$this->SetValue( 'Blocked', $blocked );
+				$this->TileUpdate( [ 'blocked' => $blocked ] );
+			} elseif ( $this->ReadPropertyBoolean( 'privBlock' ) ) {
+				// The tile already shows the new state: push the real one back.
+				$this->TileUpdate( [ 'blocked' => (bool) $this->GetValue( 'Blocked' ) ] );
+			}
+			return $ok;
+		}
+
+		/** Request to the unofficial API of the gateway; the MAC of this client is added. */
+		private function PrivateCall( string $api, array $param ): mixed
+		{
+			$mac = $this->ReadAttributeString( 'MAC' );
+			if ( $mac === '' || !$this->HasActiveParent() ) {
+				$this->SendDebug( 'UnifiCL', 'Unofficial API: MAC unknown or gateway not active', 0 );
+				return null;
+			}
+			$param[ 'mac' ] = $mac;
+			$data = $this->SendDataToParent( json_encode( [ 'DataID' => '{4A5538F1-1C38-198A-3144-D806E0DADF87}', 'Api' => $api, 'InstanceID' => $this->InstanceID, 'Param1' => json_encode( $param ) ] ) );
+			return $data === '' ? null : unserialize( $data );
+		}
+
+		private function UpdatePrivateClient(): void
+		{
+			$activity = $this->ReadPropertyBoolean( 'privActivity' );
+			$block = $this->ReadPropertyBoolean( 'privBlock' );
+			if ( !$activity && !$block ) {
+				$state = $this->TileReadState();
+				if ( isset( $state[ 'activity' ] ) || isset( $state[ 'blocked' ] ) ) {
+					$this->TileUpdate( [ 'activity' => null, 'blocked' => null ] );
+				}
+				return;
+			}
+			$result = json_decode( (string) $this->PrivateCall( 'privGetClient', [] ), true );
+			if ( !is_array( $result ) || !( $result[ 'ok' ] ?? false ) ) {
+				$this->SendDebug( 'UnifiCL', 'Unofficial API: no client data (enabled in the gateway?)', 0 );
+				return;
+			}
+			if ( $activity ) {
+				// tx = from the network to the client (download), rx = from the client (upload); bytes/s -> Mbit/s
+				$this->SetValue( 'ActivityDown', round( $result[ 'tx' ] * 8 / 1000000, 3 ) );
+				$this->SetValue( 'ActivityUp', round( $result[ 'rx' ] * 8 / 1000000, 3 ) );
+			}
+			if ( $block ) {
+				$this->SetValue( 'Blocked', (bool) $result[ 'blocked' ] );
+			}
+			$this->TileUpdate( [
+				'activity' => $activity ? [ 'down' => $result[ 'tx' ] * 8 / 1000000, 'up' => $result[ 'rx' ] * 8 / 1000000 ] : null,
+				'blocked' => $block ? (bool) $result[ 'blocked' ] : null
+			] );
 		}
 
 		public function GetConfigurationForm(): string {
@@ -186,7 +273,11 @@ class UnifiClient extends IPSModuleStrict
 			$arrayOptions[] = array( 'type' => 'CheckBox', 'name' => 'MACAnzeigen', 'caption' => $this->Translate('Show MAC') );
 			$arrayOptions[] = array( 'type' => 'CheckBox', 'name' => 'IDAnzeigen', 'caption' => $this->Translate('Show ID') );
 			$arrayElements[] = array( 'type' => 'RowLayout',  'items' => $arrayOptions );
-			
+			$arrayElements[] = array( 'type' => 'ExpansionPanel', 'caption' => $this->Translate( 'Unofficial API' ), 'expanded' => $this->ReadPropertyBoolean( 'privActivity' ) || $this->ReadPropertyBoolean( 'privBlock' ), 'items' => [
+				[ 'type' => 'Label', 'label' => $this->Translate( 'These functions use the unofficial UniFi API and require it to be enabled in the gateway (local user + password).' ) ],
+				[ 'type' => 'CheckBox', 'name' => 'privActivity', 'caption' => $this->Translate( 'Read activity (current download/upload)' ) ],
+				[ 'type' => 'CheckBox', 'name' => 'privBlock', 'caption' => $this->Translate( 'Switchable variable to block/unblock the client' ) ]
+			] );
 
 			$arrayActions = array();
 			unset($arrayOptions);

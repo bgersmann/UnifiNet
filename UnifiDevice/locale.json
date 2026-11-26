@@ -83,7 +83,18 @@
             "Domain": "Domain",
             "Internet": "Internet",
             "Devices online": "Geräte online",
-            "Tile update interval (s) -> 0=Off": "Kachel-Aktualisierung (s) -> 0=Aus"
+            "Tile update interval (s) -> 0=Off": "Kachel-Aktualisierung (s) -> 0=Aus",
+            "Unofficial API": "Inoffizielle API",
+            "These functions use the unofficial UniFi API and require it to be enabled in the gateway (local user + password).": "Diese Funktionen nutzen die inoffizielle UniFi API und setzen voraus, dass sie im Gateway aktiviert ist (lokaler Benutzer + Passwort).",
+            "Switchable variable per port (enable/disable port)": "Schaltbare Variable je Port (Port aktivieren/deaktivieren)",
+            "Selectable PoE mode per PoE port": "Einstellbarer PoE-Modus je PoE-Port",
+            "enabled": "aktiv",
+            "Auto": "Auto",
+            "24V passive": "24V passiv",
+            "Passthrough": "Durchleitung",
+            "The port could not be changed. Details are in the debug output of the gateway.": "Der Port konnte nicht geändert werden. Details stehen in der Debug-Ausgabe des Gateways.",
+            "The PoE mode could not be changed. Details are in the debug output of the gateway.": "Der PoE-Modus konnte nicht geändert werden. Details stehen in der Debug-Ausgabe des Gateways.",
+            "disabled": "deaktiviert"
         }
     }
 }

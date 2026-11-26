@@ -86,6 +86,8 @@
     .p.c { background: var(--warn); color: #1a1400; }
     .p.sfp { border-radius: 4px 4px 9px 9px; }
     .p.sel { outline: 2px solid var(--content-color); outline-offset: 1px; }
+    /* Port disabled with the unofficial API: hatched in the error color */
+    .p.dis, .dis-swatch { background:repeating-linear-gradient(135deg, var(--track) 0 3px, color-mix(in srgb, var(--err) 45%, transparent) 3px 5px); color: var(--err-text); }
     .p.poe::after { content: ""; position: absolute; top: 2px; right: 2px; width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
     .nodigits .p { font-size: 0; }
     .nodigits .p.poe::after { width: 3px; height: 3px; }
@@ -118,6 +120,9 @@
     .toggle[aria-checked=true]::after { left: 21px; background: var(--on-accent); }
     .toggle.armed { outline: 2px solid var(--err); outline-offset: 2px; }
     .chips { display: flex; gap: 5px; flex-wrap: wrap; flex: none; }
+    .blk { display: flex; align-items: center; gap: .5em; font-size: .78em; color: var(--muted); }
+    .narrow .blk span { display: none; }
+    .act .kpi .v { font-size: 1.15em; }
 
     .devs { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 1em; flex: none; }
     .dev { display: flex; align-items: center; gap: 6px; font-size: .82em; min-width: 0; line-height: 1.35; }
@@ -190,12 +195,18 @@
     const rows = (items) => `<div class="rows">${items.filter((r) => has(r[1])).map(([key, value, p], i) => `<div class="row ${i === 0 ? 'first' : ''}" ${p ? `data-p="${p}"` : ''}><span>${E(key)}</span><span>${value}</span></div>`).join('')}</div>`;
     const link = (id, text) => (id > 0 ? `<a data-open="${Number(id)}">${E(text)} ›</a>` : E(text));
 
+    // Admin state and PoE mode of the unofficial API, if enabled in the instance.
+    const poeModes = { auto: 'Auto', off: 'Off', pasv24: '24V passive', passthrough: 'Passthrough' };
+    const portPriv = (idx) => (state && state.portsPriv ? state.portsPriv[idx] || {} : {});
     function port(p) {
-        const up = p.up === true;
-        const cls = ['p', up ? (p.speed >= 1000 ? 'g' : 'c') : '', p.conn !== 'RJ45' ? 'sfp' : '', up && p.poeOn ? 'poe' : ''].join(' ');
-        let text = `${T('Port')} ${p.idx}${p.conn !== 'RJ45' ? ` (${p.conn})` : ''}: ${up ? speed(p.speed) : T('free')}`;
+        const up = p.up === true, priv = portPriv(p.idx), disabled = priv.enabled === false;
+        const cls = ['p', disabled ? 'dis' : up ? (p.speed >= 1000 ? 'g' : 'c') : '', p.conn !== 'RJ45' ? 'sfp' : '', up && p.poeOn ? 'poe' : ''].join(' ');
+        let text = `${T('Port')} ${p.idx}${p.conn !== 'RJ45' ? ` (${p.conn})` : ''}: ${disabled ? T('disabled') : up ? speed(p.speed) : T('free')}`;
         if (p.poe) {
             text += ` · PoE ${up && p.poeOn ? `${p.poe} ${T('active')}` : T('off')}`;
+        }
+        if (has(priv.poeMode)) {
+            text += ` (${T(poeModes[priv.poeMode] || priv.poeMode)})`;
         }
         return `<button class="${cls}" title="${E(text)}" data-info="${E(text)}">${Number(p.idx)}</button>`;
     }
@@ -204,7 +215,10 @@
         const copper = sorted.filter((p) => p.conn === 'RJ45'), other = sorted.filter((p) => p.conn !== 'RJ45');
         return `<div class="ports" ${attrs}><div class="pg">${copper.map(port).join('')}</div>${other.length ? `<div class="pg">${other.map(port).join('')}</div>` : ''}</div>`;
     }
-    const legend = (poe, attrs = '') => `<div class="info wide-only" data-legend ${attrs}><span><s style="background:var(--accent-color)"></s>≥ 1 Gbit/s</span><span><s style="background:var(--warn)"></s>100 Mbit/s</span><span><s style="background:var(--track)"></s>${E(T('free'))}</span>${poe ? '<span>• PoE</span>' : ''}</div>`;
+    const anyDisabled = () => Object.values((state && state.portsPriv) || {}).some((p) => p.enabled === false);
+    const legend = (poe, attrs = '') => `<div class="info wide-only" data-legend ${attrs}><span><s style="background:var(--accent-color)"></s>≥ 1 Gbit/s</span><span><s style="background:var(--warn)"></s>100 Mbit/s</span><span><s style="background:var(--track)"></s>${E(T('free'))}</span>${anyDisabled() ? `<span><s class="dis-swatch"></s>${E(T('disabled'))}</span>` : ''}${poe ? '<span>• PoE</span>' : ''}</div>`;
+    // A switch of the tile; "confirm" is the value that needs a second tap.
+    const toggleButton = (action, checked, confirm, label) => `<button class="toggle" role="switch" aria-checked="${checked}" aria-label="${E(label)}" data-action="${action}" data-confirm="${confirm}"></button>`;
     const updateBadge = (text) => `<span class="upd">${icon('arrow-up-from-bracket')}${E(text)}</span>`;
 
     function renderDevice(d) {
@@ -257,8 +271,17 @@
         const connection = { WIRED: 'LAN', WIRELESS: 'WLAN', VPN: 'VPN', TELEPORT: 'Teleport' }[c.type] || c.type;
         const elapsed = online ? (c.connectedAt ? Date.now() / 1000 - c.connectedAt : null) : (c.offlineAt ? Date.now() / 1000 - c.offlineAt : null);
         const sub = online ? c.ip : (has(c.ip) ? `${T('Last')} ${c.ip}` : '');
-        return head(iconName, c.name, sub, online ? 'ok' : 'err')
-            + `<div class="state"><div><span class="big ${online ? 'txtok' : 'txterr'}">${E(T(online ? 'Online' : 'Offline'))}</span>${elapsed !== null ? `<div class="sub">${E(since(elapsed))}</div>` : ''}</div></div>`
+        const blocked = c.blocked === true, blockable = c.blocked === true || c.blocked === false;
+        const good = online && !blocked;
+        // Activity and blocking come from the unofficial API, if enabled in the instance.
+        const activity = c.activity && online ? `<div class="act" data-p="2">${kpis([
+            [rate(c.activity.down), T('Download')],
+            [rate(c.activity.up), T('Upload')]
+        ])}</div>` : '';
+        const blockSwitch = blockable ? `<div class="blk"><span>${E(T('Blocked'))}</span>${toggleButton('Blocked', blocked, 'true', T('Blocked'))}</div>` : '';
+        return head(iconName, c.name, sub, good ? 'ok' : 'err')
+            + `<div class="state"><div><span class="big ${good ? 'txtok' : 'txterr'}" data-label>${E(T(blocked ? 'Blocked' : online ? 'Online' : 'Offline'))}</span>${elapsed !== null ? `<div class="sub">${E(since(elapsed))}</div>` : ''}</div>${blockSwitch}</div>`
+            + activity
             + rows([
                 [T('Via'), online && has(c.uplink) ? link(c.uplinkId, c.uplink) : (online ? '' : '–')],
                 [T('Connection'), online ? E(connection) : '–', 3],
@@ -276,7 +299,7 @@
     function renderWifi(w) {
         const enabled = w.enabled === true;
         return head('wifi', w.name, T(w.type === 'IOT_OPTIMIZED' ? 'IoT-Optimized' : 'Standard'), enabled ? 'ok' : 'err')
-            + `<div class="state"><span class="big" id="wifiState">${E(T(enabled ? 'Active' : 'Inactive'))}</span><button class="toggle" role="switch" aria-checked="${enabled}" aria-label="WLAN"></button></div>`
+            + `<div class="state"><span class="big" data-label>${E(T(enabled ? 'Active' : 'Inactive'))}</span>${toggleButton('WifiEnabled', enabled, 'false', 'WLAN')}</div>`
             + `<div class="chips" data-p="3">${(w.bands || []).map((b) => `<span class="chip on">${E(String(b).replace('.', (1.5).toLocaleString().charAt(1)))} GHz</span>`).join('')}</div>`
             + rows([
                 [T('Security'), E(T(securityLabels[w.security] || w.security || ''))],
@@ -421,11 +444,16 @@
         }
         const toggle = event.target.closest('.toggle');
         if (toggle) {
-            const enabled = toggle.getAttribute('aria-checked') === 'true';
-            // Switching a WLAN off can cut the connection to this very display: ask once more.
-            if (enabled && !toggle.classList.contains('armed')) {
+            const value = toggle.getAttribute('aria-checked') !== 'true';
+            const label = box.querySelector('[data-label]');
+            const blocking = toggle.dataset.action === 'Blocked';
+            // Switching off a WLAN or blocking a client can cut the connection to this very
+            // display: the critical direction needs a second tap.
+            if (String(value) === toggle.dataset.confirm && !toggle.classList.contains('armed')) {
                 toggle.classList.add('armed');
-                document.getElementById('wifiState').textContent = T('Tap again to deactivate');
+                if (label) {
+                    label.textContent = T(blocking ? 'Tap again to block' : 'Tap again to deactivate');
+                }
                 fit();
                 clearTimeout(armTimer);
                 armTimer = setTimeout(render, 4000);
@@ -433,9 +461,11 @@
             }
             clearTimeout(armTimer);
             toggle.classList.remove('armed');
-            toggle.setAttribute('aria-checked', String(!enabled));
-            document.getElementById('wifiState').textContent = T(enabled ? 'Inactive' : 'Active');
-            requestAction('WifiEnabled', !enabled);
+            toggle.setAttribute('aria-checked', String(value));
+            if (label) {
+                label.textContent = blocking ? T(value ? 'Blocked' : 'Online') : T(value ? 'Active' : 'Inactive');
+            }
+            requestAction(toggle.dataset.action, value);
         }
     });
 
