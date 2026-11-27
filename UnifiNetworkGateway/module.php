@@ -347,7 +347,7 @@ if (empty($APIKey))
                         return serialize(['code'=> 600]);
                     }
                     $array = $this->getWifiDetails(IPS_GetProperty( $data->InstanceID, 'ID' ));
-                    return serialize($array);                    
+                    return serialize($array);
                     break;
                 case "getNetworks":
                     if (!$this->networkVersionCheck()) {
@@ -361,16 +361,16 @@ if (empty($APIKey))
                     break;
                 case "getNetworkDetails":
                     $array = $this->getNetworkDetails(IPS_GetProperty( $data->InstanceID, 'ID' ));
-                    return serialize($array);                    
+                    return serialize($array);
                     break;
                 case "updateNetworkSettings":
                     $jsonString = $this->updateNetworkSettings(IPS_GetProperty( $data->InstanceID, 'ID' ),$data->Param1);
                     return serialize($jsonString);
-                    break;                     
+                    break;
                 case "updateWifiSettings":
                     $jsonString = $this->updateWifiSettings(IPS_GetProperty( $data->InstanceID, 'ID' ),$data->Param1);
                     return serialize($jsonString);
-                    break;                  
+                    break;
 				case "getClients":
 					$array = $this->getClients();
 					return serialize($array);
@@ -391,12 +391,12 @@ if (empty($APIKey))
                     $jsonString = $this->getDevicesConfig();
 					return serialize($jsonString);
 					break;
-                case "getDeviceStats":                    
+                case "getDeviceStats":
                     $jsonString = $this->getDeviceStats(IPS_GetProperty( $data->InstanceID, 'ID' ));
                     return serialize($jsonString);
 
                     break;
-                case "getConnectedClients":                    
+                case "getConnectedClients":
                     $jsonString = $this->getConnectedClients(IPS_GetProperty( $data->InstanceID, 'ID' ));
                     return serialize($jsonString);
                     break;
@@ -537,11 +537,15 @@ return serialize($array);
             $this->SetStatus( 201 ); // Set status to error
             return [];
         }
-        if ( isset( $JSONData[ 'statusCode' ] ) ) {
-            if ($JSONData[ 'statusCode' ]<> 200 && $JSONData[ 'statusCode' ]<> 404 && $JSONData[ 'statusCode' ]<> 500) {
-                // instance inactive
-			    $this->SetStatus( $JSONData[ 'statusCode' ] );
-            }
+        $code = (int) ( $JSONData[ 'statusCode' ] ?? 200 );
+        if ( in_array( $code, [ 401, 403, 429, 502 ], true ) ) {
+            // Errors of the connection itself (key, rate limit, controller not reachable).
+            $this->SetStatus( $code );
+        } elseif ( $code === 200 && $this->GetStatus() !== 102 ) {
+            // A successful request ends an earlier error state, otherwise the children would
+            // see an inactive gateway and stop asking. Errors of a single resource (e.g. 400
+            // for a wrong ID of a child) do not mark the whole gateway as faulty.
+            $this->SetStatus( 102 );
         }
         return $JSONData;
     }
@@ -579,7 +583,7 @@ return serialize($array);
 					// instance inactive
                     $this->SendDebug("UnifiGW", "Curl error: " . json_encode($JSONData), 0);
 					return [];
-				}        
+				}
 			}
 			$this->SendDebug("UnifiGW", "GetApiDataPost: " . $this->maskSecrets( (string) $RawData ), 0);
 			return [];
@@ -650,7 +654,7 @@ return serialize($array);
                         'value'=> 'default'
                     ];
                     return $value;
-                }        
+                }
             }
             if ( isset( $JSONData['data'] ) ) {
                 $sites = $JSONData[ 'data' ];
@@ -665,7 +669,7 @@ return serialize($array);
                     'caption'=>'default',
                     'value'=> 'default'
                 ];
-            }            
+            }
             return $value;
         }
         return [];
@@ -687,7 +691,7 @@ return serialize($array);
                         'value'=> 'default'
                     ];
                     return $value;
-                }        
+                }
             }
             if ( isset( $JSONData['data'] ) ) {
                 $sites = $JSONData[ 'data' ];
@@ -702,7 +706,7 @@ return serialize($array);
                     'caption'=>'default',
                     'value'=> 'default'
                 ];
-            }            
+            }
             return $value;
         }
         return [];
@@ -738,7 +742,7 @@ return serialize($array);
                         'value'=> 'default'
                     ];
                     return $value;
-                }        
+                }
             }
             if ( isset( $JSONData['data'] ) ) {
                 $sites = $JSONData[ 'data' ];
@@ -753,7 +757,7 @@ return serialize($array);
                     'caption'=>'default',
                     'value'=> 'default'
                 ];
-            }            
+            }
             return $value;
         }
         return [];
@@ -804,7 +808,7 @@ return serialize($array);
             $this->SetStatus( 102 );
             return $JSONData['applicationVersion'];
         }
-        return 'notfound';        
+        return 'notfound';
     }
 
     private function networkVersionCheck(): bool
@@ -833,7 +837,7 @@ return serialize($array);
             } else {
                 // instance inactive
                 $this->SetStatus( 201 );
-            }            
+            }
         }
         return '';
     }
@@ -851,7 +855,7 @@ return serialize($array);
             } else {
                 // instance inactive
                 $this->SetStatus( 201 );
-            }            
+            }
         }
         return '';
     }
@@ -966,7 +970,7 @@ return serialize($array);
         $site = $this->ReadPropertyString( 'Site' );
         $siteID = $this->getSiteID( $site );
         $JSONData = $this->getApiData( '/'.$siteID.'/devices/'.$deviceID.'/statistics/latest' );
-        return json_encode($JSONData);        
+        return json_encode($JSONData);
     }
 
     public function getConnectedClients(string $deviceID): string {
@@ -976,7 +980,7 @@ return serialize($array);
         $count = 0;
         $data=$JSONData['data'] ?? [];
         if (is_array($data)) {
-            foreach ($data as $item) {            
+            foreach ($data as $item) {
                 if (isset($item['uplinkDeviceId']) && $item['uplinkDeviceId'] === $deviceID) {
                     $count++;
                }
@@ -988,7 +992,7 @@ return serialize($array);
 
     public function getDeviceData(string $deviceID):string {
             $site = $this->ReadPropertyString( 'Site' );
-            $siteID = $this->getSiteID( $site );        
+            $siteID = $this->getSiteID( $site );
             $JSONData = $this->getApiData( '/'.$siteID.'/devices/'.$deviceID );
             return json_encode($JSONData);
         }
@@ -996,7 +1000,7 @@ return serialize($array);
      public function getDeviceName(string $deviceID):string {
             $this->SendDebug("UnifiGW", "getDeviceName: " . $deviceID, 0);
             $site = $this->ReadPropertyString( 'Site' );
-            $siteID = $this->getSiteID( $site );        
+            $siteID = $this->getSiteID( $site );
             $JSONData = $this->getApiData( '/'.$siteID.'/devices/'.$deviceID );
             if (isset($JSONData['name'])){
                 return $JSONData['name'];
@@ -1033,7 +1037,7 @@ return serialize($array);
             usort( $devices, function ( $a, $b ) {
                 return $a[ 'name' ]>$b[ 'name' ];
                 });
-            foreach ( $devices as $device ) {                         
+            foreach ( $devices as $device ) {
                 $addValue = array(
                     'Name'	=>$device[ 'name' ],
                     'Type'	=>$device[ 'model' ],
@@ -1080,7 +1084,7 @@ return serialize($array);
                     $value[] = $addValue;
                 }
             }
-        if ($this->networkVersionCheck()) {  
+        if ($this->networkVersionCheck()) {
             $JSONData = $this->getApiData( '/'.$siteID.'/wifi/broadcasts?limit=200' );
             if ( isset( $JSONData[ 'data' ] ) && is_array( $JSONData[ 'data' ] ) ) {
                 $wifis = $JSONData[ 'data' ];

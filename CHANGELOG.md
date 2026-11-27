@@ -32,6 +32,12 @@ Die neuen Werte erscheinen auch in den Statuskacheln, sofern die Option in der I
 - **Client:** aktueller Download und Upload sowie ein Schalter zum Blockieren. Blockieren braucht ein zweites Antippen, weil es die Verbindung des Anzeigegeräts selbst trennen kann. Ein blockierter Client wird rot als „Blockiert“ angezeigt.
 - **Gerät:** Deaktivierte Ports erscheinen rot schraffiert mit eigenem Legendeneintrag. Die Port-Details zeigen zusätzlich den PoE-Modus. Ports werden in der Kachel bewusst nicht geschaltet, dafür gibt es die Variablen.
 
+### Fehlerbehebungen
+
+- **Unvollständige Antworten der Konsole** (zum Beispiel während eines Updates der Network Application) führten bei Clients zu Warnungen und einem Abbruch mit `TypeError` in `strtotime()`. Clients und Geräte prüfen die Antwort jetzt und lassen eine fehlerhafte Antwort aus.
+- **Offline erst nach drei Fehlern:** Ein einzelner Fehler ändert nichts. Erst nach drei fehlgeschlagenen Abfragen in Folge wird der Client oder das Gerät als offline angezeigt. Ein Client, den die API nicht kennt (404), gilt wie bisher sofort als offline.
+- **Gateway bleibt nicht mehr im Fehler hängen:** Eine fehlerhafte Einzelabfrage, zum Beispiel eine falsche ID in einer Instanz, setzt das Gateway nicht mehr auf „fehlerhaft“. Nach einem Verbindungsfehler wird es mit der nächsten erfolgreichen Abfrage wieder aktiv. Vorher fragten die untergeordneten Instanzen in diesem Zustand gar nicht mehr nach.
+
 ## Version 2.2 (2026-11-20)
 
 ### Statuskacheln für die Kachel-Visualisierung

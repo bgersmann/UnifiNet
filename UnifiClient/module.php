@@ -10,6 +10,8 @@ class UnifiClient extends IPSModuleStrict
 
     private const COLOR_GREEN = 1692672;
     private const COLOR_RED = 16077123;
+    /** Failed requests in a row until the client is shown as offline. */
+    private const FAIL_LIMIT = 3;
 
     public function GetCompatibleParents(): string
     {
@@ -80,12 +82,17 @@ class UnifiClient extends IPSModuleStrict
 			} else {
 				// instance active
 				$this->SetStatus( 102 );
-				$this->Send('getClientData','');			
+				$this->Send('getClientData','');
 			}
 		}
 
 		public function Send(string $api, string $param1): void
 		{
+			if ( !$this->HasActiveParent() && $api === 'getClientData' ) {
+				// The gateway is faulty: the device cannot be reached either.
+				$this->RequestFailed( 'gateway not active' );
+				return;
+			}
 			if ($this->HasActiveParent()) {
 				$data=$this->SendDataToParent(json_encode(['DataID' => '{4A5538F1-1C38-198A-3144-D806E0DADF87}',
 					'Api' => $api,
@@ -94,6 +101,9 @@ class UnifiClient extends IPSModuleStrict
 					]));
 				if (!$data) {
 					$this->SendDebug("UnifiCL", "Send Data Error: " . $api, 0);
+					if ( $api === 'getClientData' ) {
+						$this->RequestFailed( 'no answer from the gateway' );
+					}
 					return;
 				};
 				switch($api) {
@@ -106,27 +116,23 @@ class UnifiClient extends IPSModuleStrict
 						$array=json_decode(unserialize($data),true);
 						$this->SendDebug("UnifiCL", unserialize($data), 0);
 						# $array = json_decode($data['data'],true);
-						if ( isset( $array[ 'statusCode' ] ) ) {
-							if ($array[ 'statusCode' ]== 404) {
-								// instance inactive
-								$this->SendDebug("UnifiCL", "Device Offline: " . json_encode($array), 0);
-								$this->SetValue( 'Online', false );
-								$this->SetValue( 'UplinkDevice', '-');
-								$this->TileOffline();
-							} else {
-								// instance inactive
-								$this->SendDebug("UnifiCL", "Request failed: " . json_encode($array), 0);
-								$this->SetValue( 'Online', false );
-								$this->SetValue( 'UplinkDevice', '-');
-								$this->TileOffline();
-								$this->SetStatus( $array[ 'statusCode' ] );
-							}
-						}	
-
-						if ( is_array( $array ) && isset( $array ) ) {
+						if ( ( $array[ 'statusCode' ] ?? 0 ) == 404 ) {
+							// The API only knows connected clients: 404 means offline.
+							$this->SendDebug("UnifiCL", "Device Offline: " . json_encode($array), 0);
+							$this->RequestSucceeded();
+							$this->SetOffline();
+						} elseif ( !is_array( $array ) || isset( $array[ 'statusCode' ] ) || !isset( $array[ 'id' ], $array[ 'name' ] ) ) {
+							// Error of the controller or an incomplete answer, e.g. during an update.
+							$this->RequestFailed( substr( (string) unserialize( $data ), 0, 300 ) );
 							if ( isset( $array[ 'statusCode' ] ) ) {
-								$this->SetValue( 'Online', false );
-							} else {
+								$this->SetStatus( (int) $array[ 'statusCode' ] );
+							}
+						} else {
+							$this->RequestSucceeded();
+							if ( $this->GetStatus() !== 102 && $this->ReadPropertyInteger( 'Timer' ) > 0 ) {
+								$this->SetStatus( 102 );
+							}
+							{
 								$this->TileUpdate( [
 									'name' => (string) $array[ 'name' ],
 									'type' => (string) ( $array[ 'type' ] ?? '' ),
@@ -141,19 +147,19 @@ class UnifiClient extends IPSModuleStrict
 								$this->SetValue( 'ClientName', $array[ 'name' ] );
 								if ($this->ReadPropertyBoolean("IDAnzeigen")) {
 									$this->SetValue( 'ID', $array[ 'id' ] );
-								}								
-								$this->SetValue( 'ClientType', $array[ 'type' ] );
+								}
+								$this->SetValue( 'ClientType', (string) ( $array[ 'type' ] ?? '' ) );
 								if ( isset( $array[ 'ipAddress' ] ) ) {
 									$this->SetValue( 'ClientIP', $array[ 'ipAddress' ] );
 									$this->SetSummary($array[ 'ipAddress' ]);
 								}
-								$this->SetValue( 'ConnectedAt', strtotime( $array[ 'connectedAt' ] ) );
+								$this->SetValue( 'ConnectedAt', strtotime( (string) ( $array[ 'connectedAt' ] ?? '' ) ) ?: 0 );
 								$this->SetValue( 'Online', true );
 								if ( isset( $array['uplinkDeviceId'] ) ) {
 									$this->Send('getDeviceName',$array['uplinkDeviceId']);
 								}
 								if ($this->ReadPropertyBoolean("MACAnzeigen")) {
-									$this->SetValue( 'MAC', $array[ 'macAddress' ] );
+									$this->SetValue( 'MAC', (string) ( $array[ 'macAddress' ] ?? '' ) );
 								}
 								if ( isset( $array[ 'macAddress' ] ) ) {
 									$this->WriteAttributeString( 'MAC', (string) $array[ 'macAddress' ] );
@@ -171,7 +177,7 @@ class UnifiClient extends IPSModuleStrict
 						break;
 
 				}
-			}			
+			}
 		}
 
 		public function RequestAction( string $Ident, mixed $Value ): void
@@ -247,7 +253,7 @@ class UnifiClient extends IPSModuleStrict
 		public function GetConfigurationForm(): string {
 			if ($this->HasActiveParent()) {
 				$this->Send("getClients",'');
-			}			
+			}
 			$arrayStatus = array();
 			$arrayStatus[] = array( 'code' => 102, 'icon' => 'active', 'caption' => 'Instance is active' );
 			$arrayStatus[] = array( 'code' => 400, 'icon' => 'error', 'caption' => 'Instance is faulty: Bad Request' );
@@ -259,8 +265,8 @@ class UnifiClient extends IPSModuleStrict
 
 			$arrayElements = array();
 			$arrayElements[] = array( 'type' => 'Label', 'bold' => true, 'label' => $this->Translate('UniFi Client') );
-			$arrayElements[] = array( 'type' => 'Label', 'label' => $this->Translate('Set Timer to activate instance. The instance will then automatically collect data from the device at the specified interval.')); 
-			
+			$arrayElements[] = array( 'type' => 'Label', 'label' => $this->Translate('Set Timer to activate instance. The instance will then automatically collect data from the device at the specified interval.'));
+
 			$arrayElements[] = array( 'type' => 'NumberSpinner', 'name' => 'Timer', 'caption' => 'Timer (s) -> 0=Off' );
 			$Bufferdata = $this->GetBuffer("clients");
 			if ($Bufferdata=="") {
@@ -285,7 +291,7 @@ class UnifiClient extends IPSModuleStrict
 			$arrayOptions[] = array( 'type' => 'Button', 'width' => '220px','label' => $this->Translate('Get Data'), 'onClick' => 'UNIFICL_Send($id,"getClientData","");' );
 			$arrayActions[] = array( 'type' => 'RowLayout',  'items' => $arrayOptions );
 			return JSON_encode( array( 'status' => $arrayStatus, 'elements' => $arrayElements, 'actions' => $arrayActions ) );
-			
+
     	}
 
 		private function TileKind(): string
@@ -296,6 +302,32 @@ class UnifiClient extends IPSModuleStrict
 		private function TileRefresh(): void
 		{
 			$this->Send('getClientData','');
+		}
+
+		/**
+		 * A single failed or incomplete answer of the controller (timeout, restart, update) does not
+		 * change the state. Only after 3 failures in a row the client is shown as offline.
+		 */
+		private function RequestFailed( string $reason ): void
+		{
+			$count = (int) $this->GetBuffer( 'FailCount' ) + 1;
+			$this->SetBuffer( 'FailCount', (string) $count );
+			$this->SendDebug( 'UnifiCL', 'Request failed ('.$count.'/'.self::FAIL_LIMIT.'): '.$reason, 0 );
+			if ( $count >= self::FAIL_LIMIT ) {
+				$this->SetOffline();
+			}
+		}
+
+		private function RequestSucceeded(): void
+		{
+			$this->SetBuffer( 'FailCount', '0' );
+		}
+
+		private function SetOffline(): void
+		{
+			$this->SetValue( 'Online', false );
+			$this->SetValue( 'UplinkDevice', '-' );
+			$this->TileOffline();
 		}
 
 		/** An offline client is unknown to the API: name and IP stay, the rest is reset. */

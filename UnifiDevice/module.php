@@ -12,6 +12,8 @@ require_once __DIR__ . '/../libs/UnifiTile.php';
         private const COLOR_GREEN = 1692672;
         private const COLOR_RED = 16077123;
         private const COLOR_UPDATE = 16711680;
+        /** Failed requests in a row until the device is shown as offline. */
+        private const FAIL_LIMIT = 3;
 		public function GetCompatibleParents(): string
 		{
 			return json_encode([ 'type' => 'connect', 'moduleIDs' => [ '{A792D3EC-FEC5-A8E6-F792-E141097C6AB0}' ] ]);
@@ -59,7 +61,7 @@ require_once __DIR__ . '/../libs/UnifiTile.php';
 				[ 'Caption'=> $this->Translate( 'Up to date' ), 'ColorActive'=> true, 'ColorValue'=> self::COLOR_GREEN, 'ContentColorActive'=> false, 'ContentColorValue'=> -1, 'IconActive'=> false, 'IconValue'=> '', 'Value'=> false ],
 				[ 'Caption'=> $this->Translate( 'Update available' ), 'ColorActive'=> true, 'ColorValue'=> self::COLOR_UPDATE, 'ContentColorActive'=> false, 'ContentColorValue'=> -1, 'IconActive'=> false, 'IconValue'=> '', 'Value'=> true ]
 			] ) ], $vpos++, 1 );
-						
+
 			// The duration presentation has no ICON parameter, so the icon is set on the object.
 			// RegisterVariableInteger does not return the variable ID, hence GetIDForIdent afterwards.
 			if (@$this->GetIDForIdent("UptimeSec") == false) {
@@ -106,6 +108,11 @@ require_once __DIR__ . '/../libs/UnifiTile.php';
 
 		public function Send(string $api, string $param1): void
 		{
+			if ( !$this->HasActiveParent() && $api === 'getDeviceData' ) {
+				// The gateway is faulty: the device cannot be reached either.
+				$this->RequestFailed( 'gateway not active' );
+				return;
+			}
 			if ($this->HasActiveParent()) {
 				$data=$this->SendDataToParent(json_encode(['DataID' => '{4A5538F1-1C38-198A-3144-D806E0DADF87}',
 					'Api' => $api,
@@ -113,7 +120,10 @@ require_once __DIR__ . '/../libs/UnifiTile.php';
 					'Param1' => $param1
 					]));
 				if (!$data) {
-					$this->SendDebug("UnifiCL", "Send Data Error: " . $api, 0);
+					$this->SendDebug("UnifiDV", "Send Data Error: " . $api, 0);
+					if ( $api === 'getDeviceData' ) {
+						$this->RequestFailed( 'no answer from the gateway' );
+					}
 					return;
 				};
 				switch($api) {
@@ -133,7 +143,7 @@ require_once __DIR__ . '/../libs/UnifiTile.php';
 								$this->SendDebug("UnifiGW", json_encode($JSONData), 0);
 								$this->SetValue( 'ConnectedClients', $JSONData['connectedClients']);
 							}
-						}						
+						}
 						break;
 					case "getDeviceStats":
 						$JSONData=json_decode(unserialize($data),true);
@@ -151,22 +161,28 @@ require_once __DIR__ . '/../libs/UnifiTile.php';
 						break;
 					case "getDeviceData":
 						$JSONData=json_decode(unserialize($data),true);
-						if ( is_array( $JSONData ) && isset( $JSONData ) ) {
-							if ( isset( $JSONData[ 'statusCode' ] ) ) {
-								$this->SetValue( 'Online', false );
-								$this->TileUpdate( [ 'online' => false ] );
-							} else {
+						if ( ( $JSONData[ 'statusCode' ] ?? 0 ) == 404 ) {
+							// The device is no longer known to the controller.
+							$this->RequestSucceeded();
+							$this->SetOffline();
+						} elseif ( !is_array( $JSONData ) || isset( $JSONData[ 'statusCode' ] ) || !isset( $JSONData[ 'id' ], $JSONData[ 'name' ] ) ) {
+							// Error of the controller or an incomplete answer, e.g. during an update.
+							$this->RequestFailed( substr( (string) unserialize( $data ), 0, 300 ) );
+							break;
+						} else {
+							$this->RequestSucceeded();
+							{
 								$this->TileUpdate( $this->TileDevice( $JSONData ) );
 								$this->SetValue( 'DeviceName', $JSONData[ 'name' ] );
 								if ($this->ReadPropertyBoolean("IDAnzeigen")) {
 									$this->SetValue( 'ID', $JSONData[ 'id' ] );
-								}								
-								$this->SetValue( 'DeviceModel', $JSONData[ 'model' ] );
-								$this->SetValue( 'DeviceIP', $JSONData[ 'ipAddress' ] );
-								$this->SetSummary($JSONData[ 'ipAddress' ]);
-								$this->SetValue( 'Firmware', $JSONData[ 'firmwareVersion' ] );
-								$this->SetValue( 'FirmwareUpdate', $JSONData[ 'firmwareUpdatable' ] );
-								$this->SetValue( 'Online', ( $JSONData[ 'state' ] == 'ONLINE' ) ? true : false );
+								}
+								$this->SetValue( 'DeviceModel', (string) ( $JSONData[ 'model' ] ?? '' ) );
+								$this->SetValue( 'DeviceIP', (string) ( $JSONData[ 'ipAddress' ] ?? '' ) );
+								$this->SetSummary( (string) ( $JSONData[ 'ipAddress' ] ?? '' ) );
+								$this->SetValue( 'Firmware', (string) ( $JSONData[ 'firmwareVersion' ] ?? '' ) );
+								$this->SetValue( 'FirmwareUpdate', (bool) ( $JSONData[ 'firmwareUpdatable' ] ?? false ) );
+								$this->SetValue( 'Online', ( $JSONData[ 'state' ] ?? '' ) == 'ONLINE' );
 								if ( isset( $JSONData[ 'macAddress' ] ) ) {
 									$this->WriteAttributeString( 'MAC', (string) $JSONData[ 'macAddress' ] );
 								}
@@ -177,7 +193,7 @@ require_once __DIR__ . '/../libs/UnifiTile.php';
 										$this->SetValue( 'MAC', '-' );
 									}
 								}
-								if ( isset( $JSONData['uplink']['deviceId'] ) ) {									
+								if ( isset( $JSONData['uplink']['deviceId'] ) ) {
 									$this->Send('getDeviceName',$JSONData['uplink']['deviceId']);
 								}
 								if ( isset( $JSONData[ 'interfaces' ] ) ) {
@@ -188,12 +204,12 @@ require_once __DIR__ . '/../libs/UnifiTile.php';
 														});
 										$vpos = 1000;
 										foreach ( $ports as $port ) {
-											if ($port[ 'state' ]== 'UP') {                                
-												if ($port[ 'speedMbps' ]<=100) {                                   
+											if ($port[ 'state' ]== 'UP') {
+												if ($port[ 'speedMbps' ]<=100) {
 													$colSymbol=self::COLOR_YELLOW; //gelb
 												} else {
 													$colSymbol=self::COLOR_GREEN; //gruen
-												}                                
+												}
 											} else {
 												$colSymbol=self::COLOR_RED; //rot
 											}
@@ -202,7 +218,7 @@ require_once __DIR__ . '/../libs/UnifiTile.php';
 											$PortText='';
 											if (isset($port[ 'speedMbps' ]) && $port[ 'state' ]== 'UP') {
 												if ($port[ 'speedMbps' ]>=1000) {
-													$speed=($port[ 'speedMbps' ]/1000).'Gbit/s';                                
+													$speed=($port[ 'speedMbps' ]/1000).'Gbit/s';
 												} else {
 													$speed=$port[ 'speedMbps' ].'Mbit/s';
 												}
@@ -228,7 +244,7 @@ require_once __DIR__ . '/../libs/UnifiTile.php';
 											if ($this->ReadPropertyBoolean("PortsAnzeigen")) {
 												$this->SetValue( 'Port_'.$port[ 'idx' ], $speed);
 											}
-											
+
 										}
 									}
 									if ( isset( $JSONData[ 'interfaces' ][ 'radios' ] ) ) {
@@ -247,7 +263,7 @@ require_once __DIR__ . '/../libs/UnifiTile.php';
 											$this->MaintainVariable( 'Port_'.$vpos, $this->Translate( 'WLAN' ).' '.$radio[ 'frequencyGHz' ].' GHz', 3, [ 'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,'COLOR'=>$colSymbol,'ICON'=>'wifi'], $vpos, $this->ReadPropertyBoolean("RadiosAnzeigen") );
 											if ($this->ReadPropertyBoolean("RadiosAnzeigen")) {
 												$this->SetValue( 'Port_'.$vpos, $radioTxt );
-											}											
+											}
 										}
 									}
 								}
@@ -271,7 +287,7 @@ require_once __DIR__ . '/../libs/UnifiTile.php';
 						$this->SendDebug('UnifiDV', 'RestartDevice: '.$data, 0);
 						break;
 
-				}			
+				}
 			}
 		}
 
@@ -417,13 +433,13 @@ require_once __DIR__ . '/../libs/UnifiTile.php';
 		public function GetConfigurationForm(): string {
 			if ($this->HasActiveParent()) {
 				$this->Send('getDevices','');
-			}	
+			}
 			$arrayStatus = array();
 			$arrayStatus[] = array( 'code' => 102, 'icon' => 'active', 'caption' => 'Instance is active' );
 
 			$arrayElements = array();
 			$arrayElements[] = array( 'type' => 'Label', 'bold' => true, 'label' => $this->Translate('UniFi Device'));
-			$arrayElements[] = array( 'type' => 'Label', 'label' => $this->Translate('Set Timer to activate instance. The instance will then automatically collect data from the device at the specified interval.')); 
+			$arrayElements[] = array( 'type' => 'Label', 'label' => $this->Translate('Set Timer to activate instance. The instance will then automatically collect data from the device at the specified interval.'));
 			$arrayElements[] = array( 'type' => 'NumberSpinner', 'name' => 'Timer', 'caption' => 'Timer (s) -> 0=Off' );
 
 			$Bufferdata = $this->GetBuffer("devices");
@@ -461,6 +477,31 @@ require_once __DIR__ . '/../libs/UnifiTile.php';
 			$arrayActions[] = array( 'type' => 'RowLayout',  'items' => $arrayOptions );
 			return JSON_encode( array( 'status' => $arrayStatus, 'elements' => $arrayElements, 'actions' => $arrayActions ) );
 	    }
+
+		/**
+		 * A single failed or incomplete answer of the controller (timeout, restart, update) does not
+		 * change the state. Only after 3 failures in a row the device is shown as offline.
+		 */
+		private function RequestFailed( string $reason ): void
+		{
+			$count = (int) $this->GetBuffer( 'FailCount' ) + 1;
+			$this->SetBuffer( 'FailCount', (string) $count );
+			$this->SendDebug( 'UnifiDV', 'Request failed ('.$count.'/'.self::FAIL_LIMIT.'): '.$reason, 0 );
+			if ( $count >= self::FAIL_LIMIT ) {
+				$this->SetOffline();
+			}
+		}
+
+		private function RequestSucceeded(): void
+		{
+			$this->SetBuffer( 'FailCount', '0' );
+		}
+
+		private function SetOffline(): void
+		{
+			$this->SetValue( 'Online', false );
+			$this->TileUpdate( [ 'online' => false ] );
+		}
 
 		private function TileKind(): string
 		{
