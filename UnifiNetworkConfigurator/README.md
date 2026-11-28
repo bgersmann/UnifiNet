@@ -17,6 +17,7 @@ mit einem Klick die passenden UnifiDevice- bzw. UnifiClient-Instanzen an.
 
 * Zeigt alle Geräte und Endgeräte der UniFi Site an
 * Erlaubt das Anlegen der zugehörigen Instanzen direkt aus der Liste
+* Mit aktivierter inoffizieller API im Gateway werden auch nicht verbundene Endgeräte angezeigt (Typ 'Client-offline') und können über ihre MAC-Adresse angelegt werden
 
 ### 2. Voraussetzungen
 

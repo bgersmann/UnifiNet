@@ -13,6 +13,10 @@ class UnifiNetworkGateway extends IPSModuleStrict
 private const CONNECT_TIMEOUT = 5;
     private const REQUEST_TIMEOUT = 15;
     private const HIERARCHY_ROOT_ID = 'site';
+    /** Clients configured by MAC (offline when created) carry this prefix in their ID property. */
+    private const CLIENT_MAC_PREFIX = 'mac:';
+    /** Seconds until the MAC -> ID table of the connected clients may be loaded again. */
+    private const CLIENT_MAP_TTL = 60;
 
     public function Create(): void
     {
@@ -372,7 +376,7 @@ if (empty($APIKey))
                     return serialize($jsonString);
                     break;
 				case "getClients":
-					$array = $this->getClients();
+					$array = $this->getClients( (string) IPS_GetProperty( $data->InstanceID, 'ID' ) );
 					return serialize($array);
 					break;
                 case "getClientData":
@@ -860,32 +864,79 @@ return serialize($array);
         return '';
     }
 
-    public function getClients():array {
+    /**
+     * Options for the client selection. With the unofficial API the clients that are not
+     * connected are added; they are stored with their MAC because the official API has no ID
+     * for them. $currentID keeps the stored value of the asking instance selectable.
+     */
+    public function getClients( string $currentID = '' ):array {
         $site = $this->ReadPropertyString( 'Site' );
         $siteID = $this->getSiteID( $site );
-        $JSONData = $this->getApiData( '/'.$siteID.'/clients?limit=200' );
+        $clients = $siteID === '' ? null : $this->getAllClients( $siteID );
+        if ( $clients === null ) {
+            return [ [ 'caption' => 'default', 'value' => 'default' ] ];
+        }
+        usort( $clients, fn ( $a, $b ) => strcasecmp( (string) ( $a[ 'name' ] ?? '' ), (string) ( $b[ 'name' ] ?? '' ) ) );
         $value = [];
-        if ( is_array( $JSONData ) && isset( $JSONData ) ) {
-            if (isset($JSONData[ 'data' ])) {
-                $clients = $JSONData[ 'data' ];
-                usort( $clients, function ( $a, $b ) {
-                    return strcmp($a['name'], $b['name']);
-                });
-
-                foreach ( $clients as $client ) {
-                    $value[] = [
-                        'caption'=>$client[ 'name' ],
-                        'value'=> isset( $client[ 'id' ] ) ? $client[ 'id' ] : 'missing'
-                    ];
-                }
-            } else {
-                $value[] = [
-                    'caption'=>'default',
-                    'value'=> 'default'
-                ];
+        $connected = [];
+        foreach ( $clients as $client ) {
+            $value[] = [ 'caption' => (string) ( $client[ 'name' ] ?? '' ), 'value' => $client[ 'id' ] ?? 'missing' ];
+            $connected[ strtolower( (string) ( $client[ 'macAddress' ] ?? '' ) ) ] = (string) ( $client[ 'name' ] ?? '' );
+        }
+        $this->storeClientMap( $clients );
+        $current = $this->clientMacFromID( $currentID );
+        if ( $current !== '' && isset( $connected[ $current ] ) ) {
+            // Configured by MAC and connected now: the stored value must stay in the list.
+            $value[] = [ 'caption' => $connected[ $current ].' (MAC)', 'value' => $currentID ];
+        }
+        $offline = [];
+        foreach ( $this->privKnownClients() as $client ) {
+            if ( !isset( $connected[ $client[ 'mac' ] ] ) ) {
+                $offline[] = [ 'caption' => $client[ 'name' ].' ('.$this->Translate( 'offline' ).')', 'value' => self::CLIENT_MAC_PREFIX.$client[ 'mac' ] ];
             }
         }
-        return $value;
+        usort( $offline, fn ( $a, $b ) => strcasecmp( $a[ 'caption' ], $b[ 'caption' ] ) );
+        return array_merge( $value, $offline );
+    }
+
+    /** MAC of a client ID in the form "mac:aa:bb:...", otherwise ''. */
+    private function clientMacFromID( string $id ): string
+    {
+        return str_starts_with( $id, self::CLIENT_MAC_PREFIX ) ? strtolower( trim( substr( $id, strlen( self::CLIENT_MAC_PREFIX ) ) ) ) : '';
+    }
+
+    private function storeClientMap( array $clients ): void
+    {
+        $map = [];
+        foreach ( $clients as $client ) {
+            if ( isset( $client[ 'macAddress' ], $client[ 'id' ] ) ) {
+                $map[ strtolower( (string) $client[ 'macAddress' ] ) ] = (string) $client[ 'id' ];
+            }
+        }
+        $this->SetBuffer( 'ClientMap', json_encode( [ 'time' => time(), 'map' => $map ] ) );
+    }
+
+    /**
+     * Official ID of a client. IDs in the form "mac:..." are looked up among the connected
+     * clients; the table is loaded again at most every CLIENT_MAP_TTL seconds. '' = not connected.
+     */
+    private function resolveClientID( string $id ): string
+    {
+        $mac = $this->clientMacFromID( $id );
+        if ( $mac === '' ) {
+            return $id;
+        }
+        $cache = json_decode( $this->GetBuffer( 'ClientMap' ), true );
+        $map = $cache[ 'map' ] ?? [];
+        if ( !isset( $map[ $mac ] ) && time() - (int) ( $cache[ 'time' ] ?? 0 ) >= self::CLIENT_MAP_TTL ) {
+            $siteID = $this->getSiteID( $this->ReadPropertyString( 'Site' ) );
+            $clients = $siteID === '' ? null : $this->getAllClients( $siteID );
+            if ( $clients !== null ) {
+                $this->storeClientMap( $clients );
+                $map = json_decode( $this->GetBuffer( 'ClientMap' ), true )[ 'map' ] ?? [];
+            }
+        }
+        return $map[ $mac ] ?? '';
     }
 
     public function updateNetworkSettings(string $networkID, string $jsonPayload):string {
@@ -931,9 +982,18 @@ return serialize($array);
     }
 
      public function getClientData(string $clientID): string {
+        $resolved = $this->resolveClientID( $clientID );
+        if ( $resolved === '' ) {
+            // Configured by MAC and not connected: same answer as the API for an offline client.
+            return json_encode( [ 'statusCode' => 404, 'statusName' => 'NOT_FOUND', 'message' => 'client not connected' ] );
+        }
         $site = $this->ReadPropertyString( 'Site' );
         $siteID = $this->getSiteID( $site );
-        $JSONData = $this->getApiData( '/'.$siteID.'/clients/'.$clientID );
+        $JSONData = $this->getApiData( '/'.$siteID.'/clients/'.$resolved );
+        if ( ( $JSONData[ 'statusCode' ] ?? 0 ) == 404 && $resolved !== $clientID ) {
+            // The client disconnected: look up the MAC again with the next request.
+            $this->SetBuffer( 'ClientMap', '' );
+        }
         return json_encode($JSONData);
     }
 
@@ -1008,6 +1068,45 @@ return serialize($array);
             return '';
         }
 
+    /** Client instance of this gateway by official ID, by "mac:" ID or by the MAC it has learned. */
+    private function getClientInstanceID( string $id, string $mac ): int
+    {
+        $mac = strtolower( $mac );
+        foreach ( IPS_GetInstanceListByModuleID( '{75E5E0AD-02F4-61E0-E1AF-57F66DAF7381}' ) as $instanceID ) {
+            if ( IPS_GetInstance( $instanceID )[ 'ConnectionID' ] !== $this->InstanceID ) {
+                continue;
+            }
+            $configured = (string) IPS_GetProperty( $instanceID, 'ID' );
+            if ( ( $id !== '' && $configured === $id ) || ( $mac !== '' && ( $this->clientMacFromID( $configured ) === $mac || strtolower( UNIFICL_GetMacAddress( $instanceID ) ) === $mac ) ) ) {
+                return $instanceID;
+            }
+        }
+        return 0;
+    }
+
+    /** Clients that are not connected (unofficial API) as configurator rows. */
+    private function getOfflineClientRows( array $connectedMacs ): array
+    {
+        $rows = [];
+        $clients = $this->privKnownClients();
+        usort( $clients, fn ( $a, $b ) => strcasecmp( $a[ 'name' ], $b[ 'name' ] ) );
+        foreach ( $clients as $client ) {
+            if ( isset( $connectedMacs[ $client[ 'mac' ] ] ) ) {
+                continue;
+            }
+            $id = self::CLIENT_MAC_PREFIX.$client[ 'mac' ];
+            $rows[] = [
+                'Name' => $client[ 'name' ],
+                'Type' => 'Client-'.$this->Translate( 'offline' ),
+                'ID' => $id,
+                'IP' => $client[ 'ip' ],
+                'instanceID' => $this->getClientInstanceID( '', $client[ 'mac' ] ),
+                'create' => [ 'moduleID' => '{75E5E0AD-02F4-61E0-E1AF-57F66DAF7381}', 'configuration' => [ 'ID' => $id ], 'name' => $client[ 'name' ] ]
+            ];
+        }
+        return $rows;
+    }
+
     private function getInstanceIDForGuid( string $id, string $guid ): int
         {
             $instanceIDs = IPS_GetInstanceListByModuleID( $guid );
@@ -1070,7 +1169,7 @@ return serialize($array);
                         'Type'	=>'Client-'.  (isset( $client[ 'type' ] ) ? $client[ 'type' ] : 'missing'),
                         'ID'		=>isset( $client[ 'id' ] ) ? $client[ 'id' ] : 'missing' ,
                         'IP'		=>isset( $client[ 'ipAddress' ] ) ? $client[ 'ipAddress' ] : '',
-                        'instanceID'	=>$this->getInstanceIDForGuid( isset( $client[ 'id' ] ) ? $client[ 'id' ] : '', '{75E5E0AD-02F4-61E0-E1AF-57F66DAF7381}' )
+                        'instanceID'	=>$this->getClientInstanceID( (string) ( $client[ 'id' ] ?? '' ), (string) ( $client[ 'macAddress' ] ?? '' ) )
                         );
                         if (isset($client['id']) and !empty($client['id'])) {
                             $addValue['create'] = array(
@@ -1082,8 +1181,11 @@ return serialize($array);
                             );
                         }
                     $value[] = $addValue;
+                    $connectedMacs[ strtolower( (string) ( $client[ 'macAddress' ] ?? '' ) ) ] = true;
                 }
             }
+        // Clients that are not connected are only known to the unofficial API.
+        $value = array_merge( $value, $this->getOfflineClientRows( $connectedMacs ?? [] ) );
         if ($this->networkVersionCheck()) {
             $JSONData = $this->getApiData( '/'.$siteID.'/wifi/broadcasts?limit=200' );
             if ( isset( $JSONData[ 'data' ] ) && is_array( $JSONData[ 'data' ] ) ) {

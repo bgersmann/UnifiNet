@@ -73,6 +73,11 @@ class UnifiClient extends IPSModuleStrict
 			if ( $this->ReadPropertyBoolean( 'privBlock' ) ) {
 				$this->EnableAction( 'Blocked' );
 			}
+			// A client chosen while offline is stored with its MAC ("mac:..."), see the gateway.
+			$id = $this->ReadPropertyString( 'ID' );
+			if ( str_starts_with( $id, 'mac:' ) ) {
+				$this->WriteAttributeString( 'MAC', strtolower( trim( substr( $id, 4 ) ) ) );
+			}
 			$TimerMS = $this->ReadPropertyInteger( 'Timer' ) * 1000;
 			$this->SetTimerInterval( 'Collect Data', $TimerMS );
 			if ( 0 == $TimerMS )
@@ -193,6 +198,12 @@ class UnifiClient extends IPSModuleStrict
 			}
 		}
 
+		/** MAC address of the client, known after the first successful request or from a "mac:" ID. */
+		public function GetMacAddress(): string
+		{
+			return $this->ReadAttributeString( 'MAC' );
+		}
+
 		/** Blocks or unblocks the client in the network (unofficial API). */
 		public function SetBlocked( bool $blocked ): bool
 		{
@@ -224,12 +235,16 @@ class UnifiClient extends IPSModuleStrict
 		{
 			$activity = $this->ReadPropertyBoolean( 'privActivity' );
 			$block = $this->ReadPropertyBoolean( 'privBlock' );
+			// Without a name the client was configured while offline: the name comes from here.
+			$needName = $this->GetValue( 'ClientName' ) === '' && $this->ReadAttributeString( 'MAC' ) !== '';
 			if ( !$activity && !$block ) {
 				$state = $this->TileReadState();
 				if ( isset( $state[ 'activity' ] ) || isset( $state[ 'blocked' ] ) ) {
 					$this->TileUpdate( [ 'activity' => null, 'blocked' => null ] );
 				}
-				return;
+				if ( !$needName ) {
+					return;
+				}
 			}
 			$result = json_decode( (string) $this->PrivateCall( 'privGetClient', [] ), true );
 			if ( !is_array( $result ) || !( $result[ 'ok' ] ?? false ) ) {
@@ -243,6 +258,14 @@ class UnifiClient extends IPSModuleStrict
 			}
 			if ( $block ) {
 				$this->SetValue( 'Blocked', (bool) $result[ 'blocked' ] );
+			}
+			// A client configured while offline has never been seen by the official API.
+			if ( $this->GetValue( 'ClientName' ) === '' && ( $result[ 'name' ] ?? '' ) !== '' ) {
+				$this->SetValue( 'ClientName', $result[ 'name' ] );
+				if ( $this->GetValue( 'ClientIP' ) === '' && ( $result[ 'ip' ] ?? '' ) !== '' ) {
+					$this->SetValue( 'ClientIP', $result[ 'ip' ] );
+				}
+				$this->TileUpdate( [ 'name' => $result[ 'name' ], 'ip' => (string) ( $result[ 'ip' ] ?? '' ) ] );
 			}
 			$this->TileUpdate( [
 				'activity' => $activity ? [ 'down' => $result[ 'tx' ] * 8 / 1000000, 'up' => $result[ 'rx' ] * 8 / 1000000 ] : null,

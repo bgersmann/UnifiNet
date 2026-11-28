@@ -33,6 +33,9 @@ trait UnifiPrivateApi
         if ( $devices === null ) {
             return $this->Translate( 'Login successful, but the data request failed. Please check the site.' );
         }
+        $users = $this->privApi_request( '/rest/user', 'GET' ) ?? [];
+        $online = $this->privApi_request( '/stat/sta', 'GET' ) ?? [];
+        $this->SendDebug( 'UnifiGW', 'TestUnofficialAPI: known clients='.count( $users ).', connected='.count( $online ), 0 );
         return sprintf( $this->Translate( 'Unofficial API works: %d devices found.' ), count( $devices ) );
     }
 
@@ -360,7 +363,14 @@ trait UnifiPrivateApi
         if ( $user === null ) {
             return [ 'ok' => false ];
         }
-        $result = [ 'ok' => true, 'blocked' => (bool) ( $user[ 0 ][ 'blocked' ] ?? false ), 'online' => false, 'tx' => 0.0, 'rx' => 0.0 ];
+        $this->SendDebug( 'UnifiGW', 'privGetClient: _id='.( $user[ 0 ][ '_id' ] ?? '-' ).', name='.( $user[ 0 ][ 'name' ] ?? $user[ 0 ][ 'hostname' ] ?? '-' ), 0 );
+        $result = [
+            'ok' => true,
+            'blocked' => (bool) ( $user[ 0 ][ 'blocked' ] ?? false ),
+            'name' => (string) ( $user[ 0 ][ 'name' ] ?? $user[ 0 ][ 'hostname' ] ?? '' ),
+            'ip' => (string) ( $user[ 0 ][ 'last_ip' ] ?? '' ),
+            'online' => false, 'tx' => 0.0, 'rx' => 0.0
+        ];
         $station = $this->privApi_request( '/stat/sta/'.rawurlencode( $mac ), 'GET' );
         if ( isset( $station[ 0 ] ) ) {
             $sta = $station[ 0 ];
@@ -373,6 +383,27 @@ trait UnifiPrivateApi
             $result[ 'rx' ] = (float) ( $wired ? ( $sta[ 'wired-rx_bytes-r' ] ?? $sta[ 'rx_bytes-r' ] ?? 0 ) : ( $sta[ 'rx_bytes-r' ] ?? 0 ) );
         }
         return $result;
+    }
+
+    /** All clients known to the network, also those that are not connected. */
+    private function privKnownClients(): array
+    {
+        if ( !$this->privApi_enabled() ) {
+            return [];
+        }
+        $clients = [];
+        foreach ( $this->privApi_request( '/rest/user', 'GET' ) ?? [] as $user ) {
+            $mac = $this->privApi_normalizeMac( (string) ( $user[ 'mac' ] ?? '' ) );
+            if ( $mac === '' ) {
+                continue;
+            }
+            $clients[] = [
+                'mac' => $mac,
+                'name' => (string) ( $user[ 'name' ] ?? $user[ 'hostname' ] ?? $mac ),
+                'ip' => (string) ( $user[ 'last_ip' ] ?? $user[ 'fixed_ip' ] ?? '' )
+            ];
+        }
+        return $clients;
     }
 
     private function privSetClientBlocked( string $mac, bool $blocked ): bool

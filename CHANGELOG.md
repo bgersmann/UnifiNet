@@ -20,6 +20,16 @@ Die offizielle Integration API kann keine Ports schalten, keinen PoE-Modus setze
 - **Aktivität:** aktueller Download und Upload in Mbit/s.
 - **Blockieren/Freigeben:** eine schaltbare Variable „Blockiert“ und der Befehl `UNIFICL_SetBlocked`. Die Instanz merkt sich die MAC-Adresse, weil ein blockierter Client aus der offiziellen API verschwindet. So lässt er sich auch wieder freigeben.
 
+### Offline-Clients einrichten
+
+Die offizielle API kennt nur verbundene Clients, deshalb ließen sich Clients, die gerade offline sind, nicht einrichten. Mit aktivierter inoffizieller API gilt jetzt:
+
+- **Auswahl und Konfigurator:** Die Client-Auswahl und der Konfigurator zeigen zusätzlich alle bekannten, nicht verbundenen Clients, gekennzeichnet mit „(offline)“ bzw. Typ „Client-offline“.
+- **Speicherung per MAC:** Solche Clients werden mit ihrer MAC-Adresse gespeichert (`mac:aa:bb:…`), weil die offizielle API für sie keine ID kennt. Das Gateway ordnet ihnen die offizielle ID zu, sobald sie sich verbinden. Die Liste der verbundenen Clients lädt es dafür höchstens einmal pro Minute.
+- **Name und IP:** Für einen noch nie verbundenen Client kommen Name und letzte IP aus der inoffiziellen API.
+- **Bestehende Instanzen:** Instanzen mit offizieller ID bleiben unverändert. Der Konfigurator erkennt Client-Instanzen jetzt auch über die MAC-Adresse.
+- Neuer Befehl `UNIFICL_GetMacAddress`.
+
 ### Umbenennung zur Abgrenzung vom Protect-Modul
 
 - **Module umbenannt:** `UnifiGateway` heißt jetzt `UnifiNetworkGateway`, `UnifiConfigurator` heißt `UnifiNetworkConfigurator`. Die alten Namen bleiben als Suchbegriff (Alias) erhalten.

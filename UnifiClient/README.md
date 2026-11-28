@@ -41,7 +41,7 @@ __Konfigurationsseite__:
 Name     | Beschreibung
 -------- | ------------------
 Timer    | Timer des Abfrageintervalls in Sekunden. 0 = Deaktiviert.
-Client ID | Bitte das Endgerät aus der Liste wählen. Die Liste wird über 'Endgeräte abrufen' gefüllt.
+Client ID | Bitte das Endgerät aus der Liste wählen. Die Liste wird über 'Endgeräte abrufen' gefüllt. Ist im Gateway die inoffizielle API aktiv, enthält sie zusätzlich die nicht verbundenen Endgeräte mit dem Zusatz '(offline)'. Diese werden über ihre MAC-Adresse gespeichert (`mac:aa:bb:…`), weil die offizielle API für sie keine ID kennt. Solange so ein Endgerät nicht verbunden ist, gilt es als offline. Name und letzte IP kommen dann aus der inoffiziellen API. Sobald es sich verbindet, liefert die Instanz alle Werte wie gewohnt.
 MAC-Adresse anzeigen | Erzeugt eine Variable mit der MAC-Adresse des Endgeräts.
 ID anzeigen | Erzeugt eine Variable mit der UUID des Endgeräts.
 Inoffizielle API > Aktivität auslesen | Erzeugt Variablen mit dem aktuellen Download und Upload des Endgeräts in Mbit/s.
@@ -78,6 +78,11 @@ Keine vorhanden. Die Darstellung erfolgt über Variablen-Presentations.
 Die Instanz bringt eine eigene Statuskachel mit: Online-Zustand mit Dauer, Verbindungsart, übergeordnetes Gerät (ab IP-Symcon 8.2 antippbar), IP und MAC. Mit den Optionen der inoffiziellen API zeigt sie zusätzlich den aktuellen Download und Upload und einen Schalter zum Blockieren. Blockieren braucht ein zweites Antippen. Die Statusvariablen können weiterhin direkt verwendet werden.
 
 ### 7. PHP-Befehlsreferenz
+
+```php
+string UNIFICL_GetMacAddress(integer $InstanzID);
+```
+Liefert die MAC-Adresse des Endgeräts, sobald sie bekannt ist.
 
 ```php
 boolean UNIFICL_SetBlocked(integer $InstanzID, boolean $Blockiert);
